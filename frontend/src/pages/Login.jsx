@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { Mail, Lock, Loader2, AlertCircle, HeartPulse, ShieldCheck, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, Loader2, AlertCircle, HeartPulse, ShieldCheck, ArrowRight, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Login = () => {
@@ -24,7 +24,15 @@ const Login = () => {
     };
 
     return (
-        <div className="h-screen w-full flex overflow-hidden bg-white">
+        <div className="h-screen w-full flex overflow-hidden bg-white relative">
+            {/* Go Back Button */}
+            <Link
+                to="/"
+                className="absolute top-5 left-5 z-20 flex items-center justify-center w-10 h-10 bg-white/50 backdrop-blur-md border border-slate-200 rounded-full text-slate-600 hover:bg-white hover:text-primary-600 transition-all shadow-sm group"
+            >
+                <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+            </Link>
+
             {/* Left Side: Form Section */}
             <div className="w-full lg:w-1/2 h-full flex flex-col justify-center items-center p-6 sm:p-10 bg-slate-50/30">
                 <motion.div

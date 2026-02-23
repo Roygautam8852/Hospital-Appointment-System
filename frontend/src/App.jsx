@@ -46,7 +46,13 @@ const AppContent = () => {
     const { pathname } = useLocation();
 
     // Pages that should NOT have the global Navbar
-    const hideNavbar = ['/login', '/signup'].includes(pathname) || pathname.includes('/dashboard');
+    const hideNavbar = [
+        '/login',
+        '/signup'
+    ].includes(pathname) ||
+        pathname.startsWith('/patient') ||
+        pathname.startsWith('/doctor') ||
+        pathname.startsWith('/admin');
 
     return (
         <>

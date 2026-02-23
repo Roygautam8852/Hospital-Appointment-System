@@ -27,12 +27,12 @@ app.use(cors({
 // Route files
 const auth = require('./routes/authRoutes');
 const appointments = require('./routes/appointmentRoutes');
-// const users = require('./routes/users');
+const doctors = require('./routes/doctorRoutes');
 
 // Mount routers
 app.use('/api/auth', auth);
 app.use('/api/appointments', appointments);
-// app.use('/api/users', users);
+app.use('/api/doctors', doctors);
 
 app.get('/', (req, res) => {
     res.send('API is running...');

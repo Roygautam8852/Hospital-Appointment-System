@@ -57,7 +57,15 @@ const Signup = () => {
     const prevStep = () => setStep(1);
 
     return (
-        <div className="h-screen w-full flex overflow-hidden bg-white">
+        <div className="h-screen w-full flex overflow-hidden bg-white relative">
+            {/* Go Back Button */}
+            <Link
+                to="/"
+                className="absolute top-5 left-5 z-20 flex items-center justify-center w-10 h-10 bg-white/50 backdrop-blur-md border border-slate-200 rounded-full text-slate-600 hover:bg-white hover:text-primary-600 transition-all shadow-sm group"
+            >
+                <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+            </Link>
+
             {/* Form Side */}
             <div className="w-full lg:w-1/2 h-full flex flex-col justify-center items-center p-6 sm:p-10 bg-slate-50/30 overflow-hidden">
                 <motion.div
@@ -67,12 +75,13 @@ const Signup = () => {
                 >
                     {/* Header */}
                     <div className="mb-6 flex flex-col items-center lg:items-start text-center lg:text-left">
-                        <Link to="/" className="flex items-center gap-2 mb-4 group">
-                            <div className="h-8 w-8 bg-primary-600 rounded-lg flex items-center justify-center shadow-lg shadow-primary-200">
-                                <HeartPulse className="h-4 w-4 text-white" />
+                        {/* Brand */}
+                        <div className="flex items-center gap-2 mb-5 group">
+                            <div className="h-8 w-8 bg-primary-600 rounded-lg flex items-center justify-center shadow-lg shadow-primary-200 group-hover:scale-110 transition-transform text-white">
+                                <HeartPulse size={16} />
                             </div>
-                            <span className="text-lg font-black text-slate-900 tracking-tighter uppercase">CarePulse</span>
-                        </Link>
+                            <span className="text-lg font-black text-slate-900 tracking-tighter">CAREPULSE</span>
+                        </div>
                         <h2 className="text-2xl font-black text-slate-900 mb-1">Create Account</h2>
                         <p className="text-sm text-slate-500 font-medium">Join our global healthcare network</p>
                     </div>
