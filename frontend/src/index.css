@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --primary: #3b82f6;
+    --secondary: #1e40af;
+    --accent: #10b981;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    @apply bg-slate-50 text-slate-900;
+}
+
+.glass-card {
+    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-xl;
+}
+
+.btn-primary {
+    @apply px-6 py-2 bg-primary-600 text-white rounded-lg font-medium transition-all hover:bg-primary-700 active:scale-95 shadow-md hover:shadow-lg;
+}
+
+.btn-secondary {
+    @apply px-6 py-2 bg-white text-primary-600 border border-primary-600 rounded-lg font-medium transition-all hover:bg-primary-50 active:scale-95 shadow-sm;
+}
+
+.heading-1 {
+    @apply text-4xl md:text-5xl font-bold tracking-tight text-slate-900;
+}
+
+.heading-2 {
+    @apply text-3xl font-bold tracking-tight text-slate-900;
+}
+
+.section-padding {
+    @apply py-16 md:py-24;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.animate-shake {
+    animation: shake 0.4s ease-in-out;
+}

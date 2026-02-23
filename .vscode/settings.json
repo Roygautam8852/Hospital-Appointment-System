@@ -1,0 +1,12 @@
+{
+    "css.lint.unknownAtRules": "ignore",
+    "tailwindCSS.includeLanguages": {
+        "plaintext": "css",
+        "html": "html",
+        "javascript": "javascript",
+        "javascriptreact": "javascriptreact"
+    },
+    "files.associations": {
+        "*.css": "tailwindcss"
+    }
+}
