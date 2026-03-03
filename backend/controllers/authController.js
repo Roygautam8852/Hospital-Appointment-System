@@ -39,6 +39,9 @@ exports.register = async (req, res) => {
                     name: user.name,
                     email: user.email,
                     role: user.role,
+                    profileImage: user.profileImage,
+                    specialization: user.specialization,
+                    experience: user.experience,
                 },
             });
         }
@@ -74,6 +77,9 @@ exports.login = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                profileImage: user.profileImage,
+                specialization: user.specialization,
+                experience: user.experience,
             },
         });
     } catch (error) {

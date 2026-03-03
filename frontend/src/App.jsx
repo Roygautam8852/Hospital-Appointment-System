@@ -8,6 +8,10 @@ import PatientDashboard from './pages/PatientDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import BookAppointment from './pages/BookAppointment';
+import MyHistory from './pages/MyHistory';
+import MedicalRecords from './pages/MedicalRecords';
+import Notifications from './pages/Notifications';
+import Profile from './pages/Profile';
 import { Loader2 } from 'lucide-react';
 
 const PrivateRoute = ({ children, roles }) => {
@@ -90,6 +94,38 @@ const AppContent = () => {
                     element={
                         <PrivateRoute roles={['patient']}>
                             <BookAppointment />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/patient/history"
+                    element={
+                        <PrivateRoute roles={['patient']}>
+                            <MyHistory />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/patient/records"
+                    element={
+                        <PrivateRoute roles={['patient']}>
+                            <MedicalRecords />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/patient/notifications"
+                    element={
+                        <PrivateRoute roles={['patient']}>
+                            <Notifications />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/patient/profile"
+                    element={
+                        <PrivateRoute roles={['patient']}>
+                            <Profile />
                         </PrivateRoute>
                     }
                 />

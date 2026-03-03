@@ -53,7 +53,21 @@ exports.bookAppointment = async (req, res) => {
             data: appointment,
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Book Appointment Error:', error);
+
+        // Handle Mongoose Validation Error
+        if (error.name === 'ValidationError') {
+            const messages = Object.values(error.errors).map(val => val.message);
+            return res.status(400).json({
+                success: false,
+                message: messages.join(', ')
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Internal Server Error'
+        });
     }
 };
 

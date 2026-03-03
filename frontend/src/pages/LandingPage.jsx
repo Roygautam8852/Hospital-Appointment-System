@@ -109,7 +109,7 @@ const LandingPage = () => {
                                     <div className="h-9 w-9 bg-primary-100 rounded-full flex items-center justify-center">
                                         <Stethoscope className="text-primary-600 h-4.5 w-4.5" />
                                     </div>
-                                    <h1 className="text-2xl lg:text-3xl font-black text-primary-600 tracking-tight">MediCare+</h1>
+                                    <h1 className="text-2xl lg:text-3xl font-bold text-primary-600 tracking-tight">MediCare+</h1>
                                 </div>
 
                                 <div className="flex gap-1 mb-4 text-emerald-400">
@@ -118,7 +118,7 @@ const LandingPage = () => {
 
                                 <h2 className="text-xl lg:text-3xl font-bold mb-6 text-slate-800 leading-tight">
                                     Premium Healthcare <br />
-                                    <span className="text-primary-600 font-black">At Your Fingertips</span>
+                                    <span className="text-primary-600">At Your Fingertips</span>
                                 </h2>
 
                                 {/* Feature Badges */}
@@ -137,7 +137,7 @@ const LandingPage = () => {
                                 </div>
 
                                 <div className="flex flex-wrap gap-3">
-                                    <button onClick={handleBookClick} className="px-5 py-2.5 bg-primary-600 text-white rounded-lg font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-primary-700 transition-all shadow-md shadow-primary-200">
+                                    <button onClick={handleBookClick} className="px-6 py-3 bg-primary-600 text-white rounded-lg font-bold text-sm tracking-wide flex items-center gap-2 hover:bg-primary-700 transition-all shadow-md shadow-primary-200">
                                         Book Appointment Now
                                     </button>
                                     <div className="flex items-center gap-3 bg-red-50/50 px-5 py-2.5 rounded-xl border border-red-100/50 group cursor-pointer hover:bg-red-50 transition-colors">
@@ -145,8 +145,8 @@ const LandingPage = () => {
                                             <Phone size={16} />
                                         </div>
                                         <div>
-                                            <p className="text-[8px] font-black text-red-400 uppercase tracking-widest leading-none mb-0.5">Emergency Call</p>
-                                            <p className="text-sm font-black text-red-600">911-CARE-PULSE</p>
+                                            <p className="text-[10px] font-bold text-red-400 capitalize mb-0.5">Emergency Call</p>
+                                            <p className="text-sm font-bold text-red-600">911-CARE-PULSE</p>
                                         </div>
                                     </div>
                                 </div>
@@ -163,14 +163,18 @@ const LandingPage = () => {
                                         src="https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&q=80&w=800"
                                         alt="Medical Team"
                                         className="rounded-[2rem] shadow-lg w-full h-[340px] object-cover object-top"
+                                        onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = "https://images.unsplash.com/photo-1576091160550-217359f4ecf8?auto=format&fit=crop&q=80&w=800";
+                                        }}
                                     />
                                     <div className="absolute -bottom-4 -left-4 bg-white p-2.5 rounded-xl shadow-md border border-slate-50 flex items-center gap-2.5">
                                         <div className="h-8 w-8 bg-emerald-600 rounded-lg flex items-center justify-center text-white">
                                             <Users size={16} />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-black text-slate-800">500+</p>
-                                            <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest leading-none">Active Doctors</p>
+                                            <p className="text-sm font-bold text-slate-800">500+</p>
+                                            <p className="text-[10px] font-semibold text-slate-400">Active Doctors</p>
                                         </div>
                                     </div>
                                 </div>
@@ -190,7 +194,7 @@ const LandingPage = () => {
                     <motion.h3
                         initial={{ opacity: 0, scale: 0.9 }}
                         whileInView={{ opacity: 1, scale: 1 }}
-                        className="bg-slate-50/0 px-8 inline-block relative text-2xl lg:text-4xl font-black text-slate-800 tracking-tighter uppercase mb-10"
+                        className="bg-slate-50/0 px-8 inline-block relative text-2xl lg:text-4xl font-bold text-slate-800 tracking-tight mb-10"
                     >
                         Certified & <span className="text-emerald-600 underline decoration-emerald-200 underline-offset-8">Excellence</span>
                     </motion.h3>
@@ -212,8 +216,8 @@ const LandingPage = () => {
                                 <div className={`mb-4 p-3 rounded-2xl bg-white shadow-inner group-hover:scale-110 transition-transform ${badge.color}`}>
                                     <badge.icon size={32} strokeWidth={2.5} />
                                 </div>
-                                <h4 className="text-sm font-black text-slate-800 uppercase tracking-wide leading-tight">{badge.title}</h4>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{badge.subtitle}</p>
+                                <h4 className="text-sm font-bold text-slate-800 tracking-tight">{badge.title}</h4>
+                                <p className="text-[10px] font-medium text-slate-400 mt-1">{badge.subtitle}</p>
                             </motion.div>
                         ))}
                     </div>
@@ -224,7 +228,7 @@ const LandingPage = () => {
             <section id="services" className="py-20 px-4">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-12">
-                        <h2 className="text-3xl lg:text-4xl font-black text-slate-800 mb-3">Our <span className="text-emerald-600">Specialized</span> Services</h2>
+                        <h2 className="text-3xl lg:text-4xl font-bold text-slate-800 mb-3">Our <span className="text-emerald-600">Specialized</span> Services</h2>
                         <p className="text-slate-500 text-sm font-medium">Providing high-quality medical care across multiple departments.</p>
                     </div>
 
@@ -255,6 +259,10 @@ const LandingPage = () => {
                                         src={service.img}
                                         alt={service.name}
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                        onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = "https://images.unsplash.com/photo-1505751172107-1ba9321da3be?auto=format&fit=crop&q=80&w=400";
+                                        }}
                                     />
                                     <div className="absolute top-3 left-3 h-8 w-8 bg-white/95 backdrop-blur-sm rounded-lg flex items-center justify-center text-emerald-600 shadow-lg border border-white/50">
                                         <service.icon size={14} />
@@ -262,12 +270,12 @@ const LandingPage = () => {
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                 </div>
                                 <div className="p-5">
-                                    <h4 className="text-base font-black text-slate-800 mb-1 leading-tight">{service.name}</h4>
-                                    <p className="text-[10px] font-medium text-slate-500 leading-relaxed italic pr-4">
+                                    <h4 className="text-base font-bold text-slate-800 mb-1 leading-tight">{service.name}</h4>
+                                    <p className="text-xs text-slate-500 leading-relaxed italic pr-4">
                                         "{service.desc}"
                                     </p>
-                                    <div className="mt-4 flex items-center gap-2 text-emerald-600 text-[9px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
-                                        Learn More <ArrowRight size={10} />
+                                    <div className="mt-4 flex items-center gap-2 text-emerald-600 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+                                        Learn More <ArrowRight size={12} />
                                     </div>
                                 </div>
                             </motion.div>
@@ -280,7 +288,7 @@ const LandingPage = () => {
             <section id="doctors" className="py-20 px-4 bg-slate-50/50">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-12">
-                        <h2 className="text-3xl lg:text-4xl font-black text-slate-800 mb-3">Our <span className="text-primary-600 text-emerald-600">Medical</span> Team</h2>
+                        <h2 className="text-3xl lg:text-4xl font-bold text-slate-800 mb-3">Our <span className="text-emerald-600 text-primary-600">Medical</span> Team</h2>
                         <p className="text-slate-500 text-sm font-medium">Book appointments quickly with our verified specialists.</p>
                     </div>
 
@@ -293,18 +301,26 @@ const LandingPage = () => {
                                 className="bg-white rounded-[2rem] overflow-hidden shadow-sm border border-slate-100 hover:shadow-xl transition-all group"
                             >
                                 <div className="h-64 overflow-hidden relative">
-                                    <img src={doc.img} alt={doc.name} className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700" />
+                                    <img
+                                        src={doc.img}
+                                        alt={doc.name}
+                                        className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700"
+                                        onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(doc.name)}&background=10b981&color=fff&bold=true`;
+                                        }}
+                                    />
                                     <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-md">
                                         <StarIcon size={12} className="text-emerald-400" fill="currentColor" />
                                         <span className="text-[10px] font-black">{doc.rate}</span>
                                     </div>
                                 </div>
                                 <div className="p-6 text-center">
-                                    <h4 className="text-lg font-black text-slate-800 mb-0.5">{doc.name}</h4>
-                                    <p className="text-emerald-600 font-bold text-[10px] uppercase tracking-widest mb-3">{doc.spec}</p>
+                                    <h4 className="text-lg font-bold text-slate-800 mb-0.5">{doc.name}</h4>
+                                    <p className="text-emerald-600 font-semibold text-xs mb-3">{doc.spec}</p>
 
                                     <div className="bg-emerald-50 border border-emerald-100 rounded-lg py-1 px-3 inline-block mb-4">
-                                        <span className="text-[9px] font-black text-emerald-700 uppercase">{doc.exp}</span>
+                                        <span className="text-[10px] font-bold text-emerald-700">{doc.exp}</span>
                                     </div>
 
                                     <button onClick={handleBookClick} className="w-full py-2 bg-primary-600 text-white rounded-lg font-bold text-[11px] flex items-center justify-center gap-2 hover:bg-primary-700 transition-all shadow-md shadow-primary-50">
@@ -321,8 +337,8 @@ const LandingPage = () => {
             <section className="py-20 px-4">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-12">
-                        <h2 className="text-3xl lg:text-5xl font-black text-emerald-600 mb-3">Voices of Trust</h2>
-                        <p className="text-slate-500 text-xs font-medium max-w-2xl mx-auto">Real stories from doctors and patients sharing their positive experiences with our healthcare platform.</p>
+                        <h2 className="text-3xl lg:text-5xl font-bold text-emerald-600 mb-3">Voices of Trust</h2>
+                        <p className="text-slate-500 text-sm font-medium max-w-2xl mx-auto">Real stories from doctors and patients sharing their positive experiences with our healthcare platform.</p>
                     </div>
 
                     <div className="grid lg:grid-cols-2 gap-8">
@@ -330,7 +346,7 @@ const LandingPage = () => {
                         <div>
                             <div className="flex items-center gap-2 mb-6 px-4">
                                 <Users size={20} className="text-primary-600" />
-                                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Medical Professionals</h3>
+                                <h3 className="text-sm font-bold text-slate-800">Medical Professionals</h3>
                             </div>
                             <div className="space-y-4">
                                 {testimonials.filter(t => t.type === 'professional').map((t, i) => (
@@ -343,7 +359,7 @@ const LandingPage = () => {
                         <div>
                             <div className="flex items-center gap-2 mb-6 px-4">
                                 <UserCircle size={20} className="text-emerald-500" />
-                                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Patients</h3>
+                                <h3 className="text-sm font-bold text-slate-800">Patients</h3>
                             </div>
                             <div className="space-y-4">
                                 {testimonials.filter(t => t.type === 'patient').map((t, i) => (
@@ -361,7 +377,7 @@ const LandingPage = () => {
                     <div className="bg-emerald-50 rounded-[3rem] p-8 lg:p-12 border border-emerald-100 shadow-sm relative overflow-hidden">
                         <div className="grid lg:grid-cols-2 gap-12 items-center">
                             <div>
-                                <h2 className="text-3xl lg:text-4xl font-black text-slate-800 mb-4">Connect <span className="text-emerald-600">With Us</span></h2>
+                                <h2 className="text-3xl lg:text-4xl font-bold text-slate-800 mb-4">Connect <span className="text-emerald-600">With Us</span></h2>
                                 <p className="text-slate-500 text-sm font-medium mb-8">Have questions? Reach out and we'll help you schedule your care.</p>
 
                                 <div className="space-y-6">
@@ -370,8 +386,8 @@ const LandingPage = () => {
                                             <Phone size={18} />
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Call Center</p>
-                                            <p className="text-sm font-black text-slate-800 tracking-tight">+91 8090410 873</p>
+                                            <p className="text-xs font-bold text-slate-400 capitalize mb-1">Call Center</p>
+                                            <p className="text-base font-bold text-slate-800 tracking-tight">+91 8090410 873</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4">
@@ -379,8 +395,8 @@ const LandingPage = () => {
                                             <Mail size={18} />
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Email Support</p>
-                                            <p className="text-sm font-black text-slate-800 tracking-tight">support@medicare.com</p>
+                                            <p className="text-xs font-bold text-slate-400 capitalize mb-1">Email Support</p>
+                                            <p className="text-base font-bold text-slate-800 tracking-tight">support@medicare.com</p>
                                         </div>
                                     </div>
                                 </div>
@@ -393,7 +409,7 @@ const LandingPage = () => {
                                 </div>
                                 <input type="text" placeholder="Subject" className="w-full bg-white border border-slate-100 rounded-xl px-4 py-3 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-emerald-200" />
                                 <textarea placeholder="Message" rows="4" className="w-full bg-white border border-slate-100 rounded-xl px-4 py-3 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-emerald-200 resize-none"></textarea>
-                                <button type="submit" className="w-full py-3 bg-emerald-600 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-md shadow-emerald-200/50 hover:bg-emerald-700 transition-all">
+                                <button type="submit" className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-md shadow-emerald-200/50 hover:bg-emerald-700 transition-all">
                                     Send Message
                                 </button>
                             </form>
@@ -417,8 +433,8 @@ const LandingPage = () => {
                                     </div>
                                 </div>
                                 <div className="flex flex-col">
-                                    <span className="text-base font-black text-emerald-600 leading-none">MediCare</span>
-                                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Healthcare Solutions</span>
+                                    <span className="text-base font-bold text-emerald-600 leading-none">MediCare</span>
+                                    <span className="text-[9px] font-semibold text-slate-400 capitalize">Healthcare Solutions</span>
                                 </div>
                             </div>
                             <p className="text-slate-500 text-xs leading-relaxed mb-6 font-medium">
@@ -433,7 +449,7 @@ const LandingPage = () => {
 
                         {/* Column 2 */}
                         <div>
-                            <h4 className="text-xs font-black text-slate-800 mb-6 uppercase tracking-widest">Quick Links</h4>
+                            <h4 className="text-sm font-bold text-slate-800 mb-6 capitalize">Quick Links</h4>
                             <ul className="space-y-3">
                                 {['Home', 'Doctors', 'Services', 'Contact'].map((label, i) => (
                                     <li key={i}>
@@ -450,7 +466,7 @@ const LandingPage = () => {
 
                         {/* Column 3 */}
                         <div>
-                            <h4 className="text-xs font-black text-slate-800 mb-6 uppercase tracking-widest">Our Services</h4>
+                            <h4 className="text-sm font-bold text-slate-800 mb-6 capitalize">Our Services</h4>
                             <ul className="space-y-3">
                                 {[
                                     'Blood Pressure Check',
@@ -470,7 +486,7 @@ const LandingPage = () => {
 
                         {/* Column 4 */}
                         <div>
-                            <h4 className="text-xs font-black text-slate-800 mb-6 uppercase tracking-widest">Stay Connected</h4>
+                            <h4 className="text-sm font-bold text-slate-800 mb-6 capitalize">Stay Connected</h4>
                             <p className="text-slate-500 text-[11px] font-medium mb-4 italic">Subscribe for wellness insights delivered to your inbox.</p>
                             <div className="relative mb-6">
                                 <input
@@ -478,7 +494,7 @@ const LandingPage = () => {
                                     placeholder="your@email.com"
                                     className="w-full bg-white border border-slate-200 rounded-xl py-3 px-4 pr-20 focus:outline-none focus:ring-1 focus:ring-emerald-200 text-xs font-medium"
                                 />
-                                <button className="absolute right-1.5 top-1.5 bottom-1.5 px-3 bg-emerald-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-colors">
+                                <button className="absolute right-1.5 top-1.5 bottom-1.5 px-3 bg-emerald-600 text-white rounded-lg text-[10px] font-bold hover:bg-emerald-700 transition-colors">
                                     Join
                                 </button>
                             </div>
@@ -493,10 +509,10 @@ const LandingPage = () => {
                     </div>
 
                     <div className="pt-6 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest italic decoration-emerald-200 decoration-2">© 2026 MediCare Healthcare.</p>
-                        <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-black text-slate-800">DESIGNED BY:</span>
-                            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-tighter">HEXAGON DIGITAL</span>
+                        <p className="text-sm font-semibold text-slate-400 italic">© 2026 MediCare Healthcare.</p>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-slate-800">Designed By:</span>
+                            <span className="text-xs font-bold text-emerald-600 capitalize">Hexagon Digital</span>
                         </div>
                         <div className="h-8 w-8 bg-emerald-600 rounded-full flex items-center justify-center text-white shadow-md cursor-pointer hover:scale-110 transition-transform">
                             <ArrowRight size={16} className="-rotate-45" />
@@ -511,12 +527,20 @@ const LandingPage = () => {
 const TestimonialCard = ({ name, role, img, text }) => (
     <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 relative group hover:shadow-lg transition-all">
         <div className="flex items-center gap-3 mb-4">
-            <img src={img} alt={name} className="h-10 w-10 rounded-full border border-emerald-100" />
+            <img
+                src={img}
+                alt={name}
+                className="h-10 w-10 rounded-full border border-emerald-100"
+                onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=10b981&color=fff&bold=true`;
+                }}
+            />
             <div className="flex-1">
                 <div className="flex justify-between items-start">
                     <div>
-                        <h4 className="text-sm font-black text-slate-800 leading-none">{name}</h4>
-                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{role}</p>
+                        <h4 className="text-sm font-bold text-slate-800 leading-none">{name}</h4>
+                        <p className="text-[10px] font-semibold text-slate-400 capitalize mt-1 tracking-tight">{role}</p>
                     </div>
                     <div className="flex text-emerald-400 gap-0.5">
                         {[1, 2, 3, 4, 5].map(i => <StarIcon key={i} size={10} fill="currentColor" />)}

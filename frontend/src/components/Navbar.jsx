@@ -64,8 +64,8 @@ const Navbar = () => {
                             </div>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-base font-black text-emerald-600 leading-none">MediCare</span>
-                            <span className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">Healthcare Solutions</span>
+                            <span className="text-base font-bold text-emerald-600 leading-none">MediCare</span>
+                            <span className="text-[9px] font-semibold text-slate-400 capitalize tracking-tight">Healthcare Solutions</span>
                         </div>
                     </Link>
 
@@ -80,7 +80,7 @@ const Navbar = () => {
                             <button
                                 key={item.id}
                                 onClick={() => handleScroll(item.id)}
-                                className="relative px-3 py-1.5 text-[11px] font-bold text-slate-600 hover:text-emerald-600 transition-colors group uppercase tracking-widest"
+                                className="relative px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-emerald-600 transition-colors group"
                             >
                                 {item.label}
                                 <span className={`absolute bottom-0 left-0 w-0 h-0.5 bg-emerald-600 transition-all duration-300 group-hover:w-full rounded-full`}></span>
@@ -97,8 +97,18 @@ const Navbar = () => {
                                     onClick={() => setShowDropdown(!showDropdown)}
                                     className="p-0.5 rounded-full bg-white border border-slate-100 hover:border-emerald-200 transition-all shadow-sm hover:scale-105 active:scale-95 group"
                                 >
-                                    <div className="h-8 w-8 rounded-full bg-emerald-600 flex items-center justify-center text-white font-black text-[11px] shadow-md">
-                                        {user.name.charAt(0).toUpperCase()}
+                                    <div className="h-8 w-8 rounded-full overflow-hidden shadow-md flex-shrink-0 bg-emerald-600 border border-white">
+                                        <img
+                                            src={user?.profileImage && user?.profileImage !== 'default-avatar.png'
+                                                ? (user.profileImage.startsWith('http') ? user.profileImage : `http://localhost:5000/${user.profileImage}`)
+                                                : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=10b981&color=fff&bold=true`}
+                                            alt={user?.name}
+                                            className="h-full w-full object-cover"
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=10b981&color=fff&bold=true`;
+                                            }}
+                                        />
                                     </div>
                                 </button>
 
@@ -114,7 +124,7 @@ const Navbar = () => {
                                 )}
                             </div>
                         ) : (
-                            <Link to="/login" className="px-5 py-2 bg-emerald-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 hover:scale-105 active:scale-95 transition-all shadow-md shadow-emerald-100">
+                            <Link to="/login" className="px-5 py-2 bg-emerald-600 text-white rounded-full text-xs font-bold hover:bg-emerald-700 hover:scale-105 active:scale-95 transition-all shadow-md shadow-emerald-100">
                                 Login
                             </Link>
                         )}
@@ -147,7 +157,7 @@ const Navbar = () => {
                     <div className="pt-4 border-t border-slate-50 flex flex-col gap-2">
                         {!user && (
                             <>
-                                <Link to="/login" onClick={() => setIsOpen(false)} className="px-4 py-3 bg-emerald-600 text-white rounded-lg text-center font-black text-xs uppercase shadow-md">Login</Link>
+                                <Link to="/login" onClick={() => setIsOpen(false)} className="px-4 py-3 bg-emerald-600 text-white rounded-lg text-center font-bold text-sm shadow-md">Login</Link>
                             </>
                         )}
                     </div>

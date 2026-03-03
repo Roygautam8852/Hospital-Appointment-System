@@ -32,6 +32,19 @@ const appointmentSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    patientName: {
+        type: String,
+        required: true,
+    },
+    patientAge: {
+        type: Number,
+        required: true,
+    },
+    patientGender: {
+        type: String,
+        enum: ['Male', 'Female', 'Other'],
+        required: true,
+    },
     paymentStatus: {
         type: String,
         enum: ['unpaid', 'paid', 'refunded'],
