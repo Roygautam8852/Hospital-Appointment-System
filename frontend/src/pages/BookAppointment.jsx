@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
+import RazorpayPayment from '../components/RazorpayPayment';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import {
-    Calendar as CalendarIcon,
+    Calendar,
     Clock,
     User,
     Stethoscope,
@@ -17,7 +18,16 @@ import {
     Baby,
     Bone,
     Check,
-    Shield
+    Shield,
+    Brain,
+    Eye,
+    Wind,
+    Pill,
+    ArrowRight,
+    Plus,
+    Star,
+    MapPin,
+    Phone,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -28,6 +38,8 @@ const BookAppointment = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [doctors, setDoctors] = useState([]);
+    const [showPayment, setShowPayment] = useState(false);
+    const [paymentAmount, setPaymentAmount] = useState(0);
     const [formData, setFormData] = useState({
         doctor: '',
         department: '',
@@ -40,11 +52,12 @@ const BookAppointment = () => {
     });
 
     const departments = [
-        { name: 'Cardiology', icon: Heart, desc: 'Advanced heart & vascular diagnostics', color: 'from-rose-500 to-pink-600' },
-        { name: 'Neurology', icon: Activity, desc: 'Precision nervous system therapeutics', color: 'from-violet-500 to-purple-600' },
-        { name: 'Pediatrics', icon: Baby, desc: 'Dedicated pediatric wellness care', color: 'from-emerald-500 to-teal-600' },
-        { name: 'Orthopedics', icon: Bone, desc: 'Expert bone & joint restoration', color: 'from-amber-500 to-orange-600' },
-        { name: 'General Medicine', icon: Stethoscope, desc: 'Comprehensive routine health checkups', color: 'from-primary-500 to-indigo-600' }
+        { name: 'Cardiology', icon: Heart, desc: 'Heart & vascular diagnostics, ECG, echo', color: 'bg-rose-50', iconColor: 'text-rose-600', iconBg: 'bg-rose-100', border: 'hover:border-rose-200', badge: 'bg-rose-100 text-rose-600' },
+        { name: 'Neurology', icon: Brain, desc: 'Brain, spine & nervous system care', color: 'bg-violet-50', iconColor: 'text-violet-600', iconBg: 'bg-violet-100', border: 'hover:border-violet-200', badge: 'bg-violet-100 text-violet-600' },
+        { name: 'Pediatrics', icon: Baby, desc: 'Child health, growth & development', color: 'bg-emerald-50', iconColor: 'text-emerald-600', iconBg: 'bg-emerald-100', border: 'hover:border-emerald-200', badge: 'bg-emerald-100 text-emerald-600' },
+        { name: 'Orthopedics', icon: Bone, desc: 'Bone, joint & musculoskeletal treatment', color: 'bg-amber-50', iconColor: 'text-amber-600', iconBg: 'bg-amber-100', border: 'hover:border-amber-200', badge: 'bg-amber-100 text-amber-600' },
+        { name: 'General Medicine', icon: Stethoscope, desc: 'Routine checkups & general health care', color: 'bg-blue-50', iconColor: 'text-blue-600', iconBg: 'bg-blue-100', border: 'hover:border-blue-200', badge: 'bg-blue-100 text-blue-600' },
+        { name: 'Ophthalmology', icon: Eye, desc: 'Complete eye exams & vision correction', color: 'bg-cyan-50', iconColor: 'text-cyan-600', iconBg: 'bg-cyan-100', border: 'hover:border-cyan-200', badge: 'bg-cyan-100 text-cyan-600' },
     ];
 
     const timeSlots = [
@@ -54,9 +67,7 @@ const BookAppointment = () => {
     ];
 
     useEffect(() => {
-        if (formData.department) {
-            fetchDoctors();
-        }
+        if (formData.department) fetchDoctors();
     }, [formData.department]);
 
     const fetchDoctors = async () => {
@@ -74,20 +85,48 @@ const BookAppointment = () => {
 
     const handleSubmit = async () => {
         if (!formData.doctor || !formData.department || !formData.date || !formData.time || !formData.patientName || !formData.patientAge || !formData.patientGender || !formData.reason) {
-            setError('Incomplete Data. Please ensure all fields including clinic intent are finalized.');
+            setError('Please fill in all required fields before confirming.');
             return;
         }
+        if (!selectedDoctor) {
+            setError('Selected doctor not found. Please try selecting a doctor again.');
+            return;
+        }
+        // Move to Step 4 (Review)
+        setError('');
+        nextStep();
+    };
 
+    const handlePaymentSuccess = async (paymentData) => {
         setLoading(true);
         setError('');
         try {
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/appointments', formData, {
+            
+            // Prepare appointment data with proper date conversion
+            const appointmentData = {
+                ...formData,
+                patientAge: Number(formData.patientAge),
+                date: new Date(formData.date).toISOString(),
+                paymentStatus: 'paid',
+                paymentId: paymentData.transactionId,
+                amount: paymentData.amount,
+            };
+            
+            const response = await axios.post('http://localhost:5000/api/appointments', appointmentData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setStep(4);
+            
+            if (response.data.success) {
+                setStep(5);
+            } else {
+                setError(response.data.message || 'Failed to book appointment. Please try again.');
+                setShowPayment(false);
+            }
         } catch (err) {
-            setError(err.response?.data?.message || 'Network error during authorization.');
+            console.error('Booking error:', err);
+            setError(err.response?.data?.message || 'Something went wrong. Please try again.');
+            setShowPayment(false);
         } finally {
             setLoading(false);
         }
@@ -96,353 +135,681 @@ const BookAppointment = () => {
     const nextStep = () => setStep(prev => prev + 1);
     const prevStep = () => setStep(prev => prev - 1);
 
+    const selectedDept = departments.find(d => d.name === formData.department);
+    const selectedDoctor = doctors.find(d => d._id === formData.doctor);
+
     return (
         <DashboardLayout>
-            <div className="max-w-5xl mx-auto pb-20 pt-6">
-                {/* Header Section */}
-                <div className="mb-12 text-center lg:text-left flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-                    <div>
-                        <div className="flex items-center gap-3 mb-4 justify-center lg:justify-start">
-                            <div className="h-6 w-1 bg-primary-600 rounded-full"></div>
-                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Scheduling Terminal</span>
-                        </div>
-                        <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-none mb-3">
-                            Reserve Your <span className="text-primary-600 italic">Session</span>
-                        </h1>
-                        <p className="text-slate-500 font-medium max-w-lg text-base">
-                            Select your specialized department and authorized clinician to initiate your clinical visit.
-                        </p>
-                    </div>
+            <div className="font-sans max-w-5xl mx-auto pb-10">
 
-                    {/* Stepper Progress */}
-                    <div className="flex items-center gap-2 p-1.5 bg-white rounded-2xl border border-slate-100 shadow-sm self-center lg:self-auto uppercase tracking-widest font-black text-[8px]">
-                        {[1, 2, 3].map((s) => (
-                            <div key={s} className="flex items-center">
-                                <div className={`h-8 w-8 rounded-xl flex items-center justify-center transition-all duration-500 font-black text-[10px] ${step >= s ? 'bg-slate-900 text-white shadow-xl shadow-black/10' : 'bg-slate-50 text-slate-300'
-                                    }`}>
-                                    {step > s ? <Check size={14} strokeWidth={4} /> : s}
+                {/* Page Header */}
+                <div className="mb-6">
+                    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                        <div className="relative px-8 py-6">
+                            <div className="absolute inset-0 bg-gradient-to-r from-white via-emerald-50/30 to-emerald-50/60 pointer-events-none"></div>
+                            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-0.5 rounded-full">Book Appointment</span>
+                                    </div>
+                                    <h1 className="text-xl font-bold text-slate-800 tracking-tight">Reserve Your Session</h1>
+                                    <p className="text-sm text-slate-500 font-medium mt-0.5">Select a department, choose a doctor, and confirm your slot.</p>
                                 </div>
-                                {s < 3 && <div className="w-8 h-1 mx-1.5 bg-slate-50 rounded-full overflow-hidden">
-                                    <div className={`h-full bg-slate-900 transition-all duration-1000 ${step > s ? 'w-full' : 'w-0'}`}></div>
-                                </div>}
+
+                                {/* Step Progress */}
+                                <div className="flex items-center gap-2 p-1.5 bg-slate-50 rounded-xl border border-slate-100 self-start lg:self-auto">
+                                    {[
+                                        { n: 1, label: 'Department' },
+                                        { n: 2, label: 'Doctor' },
+                                        { n: 3, label: 'Details' },
+                                        { n: 4, label: 'Review' },
+                                        { n: 5, label: 'Payment' },
+                                    ].map((s, i) => (
+                                        <div key={s.n} className="flex items-center gap-1.5">
+                                            <div className={`h-7 w-7 rounded-lg flex items-center justify-center text-[11px] font-black transition-all duration-300 ${step >= s.n ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-200' : 'bg-white text-slate-400 border border-slate-200'}`}>
+                                                {step > s.n ? <Check size={12} strokeWidth={3} /> : s.n}
+                                            </div>
+                                            <span className={`text-[10px] font-bold hidden sm:block ${step === s.n ? 'text-slate-700' : 'text-slate-400'}`}>{s.label}</span>
+                                            {i < 4 && <div className={`w-6 h-px mx-0.5 transition-all duration-500 ${step > s.n ? 'bg-emerald-400' : 'bg-slate-200'}`}></div>}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                        ))}
+                        </div>
+
+                        {/* Selected summary strip */}
+                        {step > 1 && (
+                            <div className="px-8 py-3 border-t border-slate-50 bg-slate-50/50 flex items-center gap-4 flex-wrap">
+                                {selectedDept && (
+                                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-bold ${selectedDept.badge}`}>
+                                        <selectedDept.icon size={11} />
+                                        {selectedDept.name}
+                                    </div>
+                                )}
+                                {step > 2 && selectedDoctor && (
+                                    <>
+                                        <ChevronRight size={12} className="text-slate-300" />
+                                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-bold bg-blue-50 text-blue-600">
+                                            <User size={11} />
+                                            {selectedDoctor.name}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 <AnimatePresence mode="wait">
-                    {/* Step 1: Select Specialty */}
+                    {/* ── Step 1: Select Department ── */}
                     {step === 1 && (
                         <motion.div
                             key="step1"
-                            initial={{ opacity: 0, y: 20 }}
+                            initial={{ opacity: 0, y: 16 }}
                             animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="space-y-10"
+                            exit={{ opacity: 0, y: -10 }}
                         >
-                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {departments.map((dept, idx) => (
                                     <motion.button
                                         key={dept.name}
-                                        whileHover={{ y: -6, scale: 1.01 }}
-                                        whileTap={{ scale: 0.99 }}
-                                        transition={{ duration: 0.4, ease: "easeOut" }}
+                                        initial={{ opacity: 0, y: 12 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: idx * 0.06 }}
+                                        whileHover={{ y: -3, scale: 1.01 }}
+                                        whileTap={{ scale: 0.98 }}
                                         onClick={() => {
-                                            setFormData({ ...formData, department: dept.name });
+                                            setFormData({ ...formData, department: dept.name, doctor: '' });
                                             nextStep();
                                         }}
-                                        className={`p-8 rounded-[2rem] text-left transition-all relative overflow-hidden group shadow-sm hover:shadow-2xl hover:shadow-black/[0.04] bg-white border border-slate-100`}
+                                        className={`p-6 rounded-2xl text-left transition-all bg-white border border-slate-100 shadow-sm hover:shadow-md ${dept.border} group relative overflow-hidden`}
                                     >
-                                        <div className={`h-12 w-12 rounded-xl flex items-center justify-center mb-6 transition-all group-hover:rotate-6 bg-gradient-to-br ${dept.color} text-white shadow-lg`}>
-                                            <dept.icon size={22} />
+                                        <div className={`h-11 w-11 rounded-xl ${dept.iconBg} ${dept.iconColor} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                                            <dept.icon size={20} />
                                         </div>
-                                        <h3 className="font-black text-slate-900 text-lg mb-2 tracking-tighter uppercase">{dept.name}</h3>
-                                        <p className="text-[12px] text-slate-400 font-medium leading-relaxed mb-6">{dept.desc}</p>
-                                        <div className="flex items-center gap-2 text-[9px] font-black text-primary-600 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0">
-                                            Initiate Flow
-                                            <ChevronRight size={12} />
+                                        <h3 className="font-bold text-slate-800 text-sm tracking-tight mb-1">{dept.name}</h3>
+                                        <p className="text-[11px] text-slate-400 font-medium leading-relaxed mb-4">{dept.desc}</p>
+                                        <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 opacity-0 group-hover:opacity-100 transition-all -translate-x-1 group-hover:translate-x-0">
+                                            Select department <ChevronRight size={11} />
                                         </div>
-
-                                        {/* Subtle pattern background */}
-                                        <div className="absolute -bottom-10 -right-10 opacity-5 transition-transform group-hover:scale-125 duration-1000">
-                                            <dept.icon size={160} />
+                                        <div className={`absolute -bottom-6 -right-6 opacity-[0.06] transition-transform group-hover:scale-125 duration-700`}>
+                                            <dept.icon size={96} />
                                         </div>
                                     </motion.button>
+                                ))}
+                            </div>
+
+                            {/* Info strip */}
+                            <div className="mt-4 bg-white rounded-2xl border border-slate-100 shadow-sm px-6 py-4 flex flex-wrap items-center gap-6">
+                                {[
+                                    { icon: Shield, label: '500+ Certified Specialists', color: 'text-emerald-600' },
+                                    { icon: Clock, label: 'Same-day appointments available', color: 'text-blue-600' },
+                                    { icon: CheckCircle2, label: 'Instant confirmation', color: 'text-violet-600' },
+                                ].map((b, i) => (
+                                    <div key={i} className={`flex items-center gap-2 text-[11px] font-semibold ${b.color}`}>
+                                        <b.icon size={13} /> {b.label}
+                                    </div>
                                 ))}
                             </div>
                         </motion.div>
                     )}
 
-                    {/* Step 2: Select Clinician */}
+                    {/* ── Step 2: Select Doctor ── */}
                     {step === 2 && (
                         <motion.div
                             key="step2"
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -20 }}
-                            className="space-y-10"
+                            className="space-y-4"
                         >
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 px-4">
+                            <div className="flex items-center justify-between">
                                 <div>
-                                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Authorized Clinicians</h2>
-                                    <p className="text-xs font-black text-primary-600 bg-primary-50 px-3 py-1.5 rounded-full w-fit mt-2 border border-primary-100 tracking-widest">DEPT: {formData.department.toUpperCase()}</p>
+                                    <h2 className="text-base font-bold text-slate-800 tracking-tight">Available Doctors</h2>
+                                    <p className="text-[11px] text-slate-400 font-medium mt-0.5">{formData.department} department · click a doctor to continue</p>
                                 </div>
-                                <button onClick={prevStep} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all group">
-                                    <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                                    Switch Specialty
+                                <button onClick={prevStep} className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-emerald-600 transition-colors bg-white border border-slate-100 rounded-xl px-3 py-2 shadow-sm">
+                                    <ChevronLeft size={14} /> Back
                                 </button>
                             </div>
 
                             {loading ? (
-                                <div className="grid md:grid-cols-2 gap-8">
-                                    {[1, 2, 3, 4].map(i => <div key={i} className="h-64 bg-white rounded-[3rem] animate-pulse border border-slate-50 shadow-sm"></div>)}
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    {[1, 2, 3, 4].map(i => <div key={i} className="h-40 bg-white rounded-2xl animate-pulse border border-slate-100 shadow-sm"></div>)}
                                 </div>
                             ) : doctors.length > 0 ? (
-                                <div className="grid md:grid-cols-2 gap-6">
+                                <div className="grid md:grid-cols-2 gap-4">
                                     {doctors.map((doc, idx) => (
                                         <motion.div
                                             key={doc._id}
-                                            initial={{ opacity: 0, y: 15 }}
+                                            initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: idx * 0.1 }}
-                                            whileHover={{ y: -4 }}
+                                            transition={{ delay: idx * 0.08 }}
+                                            whileHover={{ y: -2 }}
                                             onClick={() => {
                                                 setFormData({ ...formData, doctor: doc._id });
                                                 nextStep();
                                             }}
-                                            className={`p-6 rounded-[2rem] border-2 cursor-pointer transition-all flex flex-col sm:flex-row items-center sm:items-start gap-6 relative shadow-sm hover:shadow-xl overflow-hidden bg-white group ${formData.doctor === doc._id ? 'border-primary-600' : 'border-white hover:border-primary-100'}`}
+                                            className={`p-5 rounded-2xl border-2 cursor-pointer transition-all flex items-center gap-5 bg-white shadow-sm hover:shadow-md group relative overflow-hidden ${formData.doctor === doc._id ? 'border-emerald-500 bg-emerald-50/30' : 'border-slate-100 hover:border-emerald-200'}`}
                                         >
-                                            <div className="h-32 w-full sm:w-32 rounded-2xl overflow-hidden shadow-xl relative flex-shrink-0 group-hover:scale-105 transition-transform duration-500">
+                                            <div className="h-16 w-16 rounded-xl overflow-hidden flex-shrink-0 border-2 border-white shadow-sm group-hover:scale-105 transition-transform duration-300">
                                                 <img
                                                     src={doc.profileImage && doc.profileImage !== 'default-avatar.png'
                                                         ? (doc.profileImage.startsWith('http') ? doc.profileImage : `http://localhost:5000/${doc.profileImage}`)
-                                                        : `https://ui-avatars.com/api/?name=${encodeURIComponent(doc.name)}&background=4f46e5&color=fff&bold=true`}
+                                                        : `https://ui-avatars.com/api/?name=${encodeURIComponent(doc.name)}&background=10b981&color=fff&bold=true`}
                                                     alt={doc.name}
                                                     className="h-full w-full object-cover"
                                                     onError={(e) => {
                                                         e.target.onerror = null;
-                                                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(doc.name)}&background=4f46e5&color=fff&bold=true`;
+                                                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(doc.name)}&background=10b981&color=fff&bold=true`;
                                                     }}
                                                 />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                                             </div>
 
-                                            <div className="flex-1 text-center sm:text-left space-y-3">
-                                                <div>
-                                                    <div className="flex items-center gap-2 justify-center sm:justify-start mb-1.5">
-                                                        <span className="bg-emerald-500/10 text-emerald-600 text-[8px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest border border-emerald-100">Verified Specialist</span>
-                                                    </div>
-                                                    <h4 className="font-black text-slate-900 text-lg tracking-tighter leading-none mb-1 group-hover:text-primary-600 transition-colors uppercase">{doc.name}</h4>
-                                                    <p className="text-xs font-bold text-slate-400 italic">{doc.specialization}</p>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-[9px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">Verified</span>
                                                 </div>
-
-                                                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-50">
+                                                <h4 className="font-bold text-slate-800 text-sm tracking-tight truncate">{doc.name}</h4>
+                                                <p className="text-[11px] text-slate-400 font-medium">{doc.specialization}</p>
+                                                <div className="flex items-center gap-4 mt-2">
                                                     <div>
-                                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Clinic Tenure</p>
-                                                        <p className="text-sm font-black text-slate-800">{doc.experience || 10}<span className="text-[10px] text-slate-400 ml-1">YRS</span></p>
+                                                        <span className="text-xs font-bold text-slate-600">{doc.experience || 10}</span>
+                                                        <span className="text-[10px] text-slate-400 font-medium"> yrs exp</span>
                                                     </div>
                                                     <div>
-                                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Standard Fee</p>
-                                                        <p className="text-sm font-black text-primary-600">₹{doc.consultationFee || 500}</p>
+                                                        <span className="text-xs font-bold text-emerald-600">₹{doc.consultationFee || 500}</span>
+                                                        <span className="text-[10px] text-slate-400 font-medium"> fee</span>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            {formData.doctor === doc._id && (
-                                                <div className="absolute top-6 right-6 h-10 w-10 bg-primary-600 text-white rounded-2xl flex items-center justify-center shadow-2xl shadow-primary-600/30">
-                                                    <Check size={24} strokeWidth={4} />
-                                                </div>
-                                            )}
+                                            <div className={`h-7 w-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${formData.doctor === doc._id ? 'bg-emerald-600 text-white' : 'bg-slate-50 text-slate-300 border border-slate-100 group-hover:bg-emerald-50 group-hover:text-emerald-500 group-hover:border-emerald-100'}`}>
+                                                {formData.doctor === doc._id ? <Check size={13} strokeWidth={3} /> : <ChevronRight size={13} />}
+                                            </div>
                                         </motion.div>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="text-center py-32 bg-white rounded-[4rem] border-2 border-dashed border-slate-100 shadow-sm px-6">
-                                    <div className="h-24 w-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-8 border border-slate-100">
-                                        <AlertCircle className="text-slate-300" size={48} />
+                                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-12 text-center">
+                                    <div className="h-14 w-14 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                                        <AlertCircle size={24} className="text-slate-300" />
                                     </div>
-                                    <h4 className="text-2xl font-black text-slate-900 mb-2 uppercase tracking-tighter">Null Provider Set</h4>
-                                    <p className="text-slate-400 font-medium max-w-xs mx-auto text-sm">No authorized clinicians are currently assigned to this department node.</p>
+                                    <p className="text-sm font-bold text-slate-600 mb-1">No doctors available</p>
+                                    <p className="text-xs text-slate-400 font-medium">No doctors are currently assigned to this department.</p>
                                 </div>
                             )}
                         </motion.div>
                     )}
 
-                    {/* Step 3: Logistics & Validation */}
+                    {/* ── Step 3: Details & Confirm ── */}
                     {step === 3 && (
                         <motion.div
                             key="step3"
-                            initial={{ opacity: 0, scale: 0.95 }}
+                            initial={{ opacity: 0, scale: 0.98 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="max-w-4xl mx-auto"
+                            exit={{ opacity: 0, scale: 0.97 }}
+                            className="space-y-4"
                         >
-                            <div className="bg-white p-12 rounded-[4rem] shadow-2xl border border-slate-100 relative overflow-hidden group">
-                                <div className="absolute inset-0 bg-gradient-to-br from-primary-600/5 via-transparent to-transparent opacity-50"></div>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-base font-bold text-slate-800 tracking-tight">Appointment Details</h2>
+                                    <p className="text-[11px] text-slate-400 font-medium mt-0.5">Fill in your information and choose a date & time slot</p>
+                                </div>
+                                <button onClick={prevStep} className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-emerald-600 transition-colors bg-white border border-slate-100 rounded-xl px-3 py-2 shadow-sm">
+                                    <ChevronLeft size={14} /> Back
+                                </button>
+                            </div>
 
-                                <div className="relative z-10 space-y-10">
-                                    <div className="flex items-center justify-between border-b border-slate-100 pb-8">
-                                        <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-4 uppercase">
-                                            <CalendarIcon className="text-primary-600" size={32} />
-                                            Logistics Terminal
-                                        </h2>
-                                        <div className="p-3 bg-slate-50 rounded-2xl">
-                                            <Shield size={24} className="text-emerald-500" />
+                            {error && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -6 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="flex items-center gap-3 p-4 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl text-xs font-semibold"
+                                >
+                                    <AlertCircle size={16} /> {error}
+                                </motion.div>
+                            )}
+
+                            <div className="grid lg:grid-cols-3 gap-4">
+                                {/* Main form */}
+                                <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                                    <div className="px-6 py-4 border-b border-slate-50 flex items-center gap-3">
+                                        <div className="h-8 w-8 bg-emerald-50 rounded-lg flex items-center justify-center">
+                                            <User size={15} className="text-emerald-600" />
                                         </div>
+                                        <h3 className="text-sm font-bold text-slate-700">Patient Information</h3>
                                     </div>
-
-                                    {error && (
-                                        <motion.div
-                                            initial={{ x: 10, opacity: 0 }}
-                                            animate={{ x: 0, opacity: 1 }}
-                                            className="p-6 bg-rose-50 border border-rose-100 text-rose-600 rounded-3xl flex items-center gap-4 text-[10px] font-black uppercase tracking-widest"
-                                        >
-                                            <AlertCircle size={20} /> {error}
-                                        </motion.div>
-                                    )}
-
-                                    <div className="grid md:grid-cols-2 gap-10">
-                                        <div className="space-y-4">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2 font-black">Personal Identity</label>
+                                    <div className="p-6 space-y-4">
+                                        {/* Patient name */}
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Full Name *</label>
                                             <div className="relative">
-                                                <User className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-primary-600 transition-colors" size={20} />
+                                                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" size={15} />
                                                 <input
                                                     type="text"
                                                     required
                                                     value={formData.patientName}
-                                                    placeholder="Unified Identification Name"
-                                                    className="w-full pl-16 pr-8 py-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] outline-none focus:ring-8 focus:ring-primary-600/5 focus:border-primary-600 font-bold text-slate-900 transition-all placeholder:text-slate-300 text-sm shadow-inner"
+                                                    placeholder="e.g. Gautam Kumar"
+                                                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm font-medium text-slate-800 transition-all placeholder:text-slate-300"
                                                     onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
                                                 />
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-6">
-                                            <div className="space-y-4">
-                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2 font-black">Age Marker</label>
+                                        {/* Age + Gender */}
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Age *</label>
                                                 <input
                                                     type="number"
                                                     required
-                                                    placeholder="YY"
-                                                    className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] outline-none focus:ring-8 focus:ring-primary-600/5 focus:border-primary-600 font-bold text-slate-900 transition-all text-sm shadow-inner text-center"
-                                                    onChange={(e) => setFormData({ ...formData, patientAge: e.target.value })}
+                                                    value={formData.patientAge}
+                                                    placeholder="e.g. 28"
+                                                    min="1" max="120"
+                                                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm font-medium text-slate-800 transition-all placeholder:text-slate-300"
+                                                    onChange={(e) => setFormData({ ...formData, patientAge: Number(e.target.value) })}
                                                 />
                                             </div>
-                                            <div className="space-y-4">
-                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2 font-black">Bioset</label>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Gender *</label>
                                                 <select
                                                     required
-                                                    className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] outline-none focus:ring-8 focus:ring-primary-600/5 focus:border-primary-600 font-bold text-slate-900 appearance-none transition-all cursor-pointer text-sm shadow-inner"
+                                                    value={formData.patientGender}
+                                                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm font-medium text-slate-800 transition-all cursor-pointer appearance-none"
                                                     onChange={(e) => setFormData({ ...formData, patientGender: e.target.value })}
                                                 >
-                                                    <option value="">SET</option>
-                                                    <option value="Male">MALE</option>
-                                                    <option value="Female">FEMALE</option>
-                                                    <option value="Other">OTHER</option>
+                                                    <option value="">Select</option>
+                                                    <option value="Male">Male</option>
+                                                    <option value="Female">Female</option>
+                                                    <option value="Other">Other</option>
                                                 </select>
                                             </div>
                                         </div>
+                                    </div>
 
-                                        <div className="space-y-4">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2 font-black">Authorization Date</label>
+                                    <div className="px-6 py-4 border-t border-slate-50 border-b bg-slate-50/30 flex items-center gap-3">
+                                        <div className="h-8 w-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                                            <Calendar size={15} className="text-blue-600" />
+                                        </div>
+                                        <h3 className="text-sm font-bold text-slate-700">Date & Time</h3>
+                                    </div>
+                                    <div className="p-6 space-y-4">
+                                        {/* Date */}
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Appointment Date *</label>
                                             <div className="relative">
-                                                <CalendarIcon className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
+                                                <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" size={15} />
                                                 <input
                                                     type="date"
                                                     required
+                                                    value={formData.date}
                                                     min={new Date().toISOString().split('T')[0]}
-                                                    className="w-full pl-16 pr-8 py-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] outline-none focus:ring-8 focus:ring-primary-600/5 focus:border-primary-600 font-bold text-slate-900 transition-all text-sm shadow-inner"
+                                                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm font-medium text-slate-800 transition-all"
                                                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                                                 />
                                             </div>
                                         </div>
 
-                                        <div className="space-y-4">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2 font-black">Temporal Window</label>
-                                            <div className="relative">
-                                                <Clock className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
-                                                <select
-                                                    required
-                                                    className="w-full pl-16 pr-8 py-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] outline-none focus:ring-8 focus:ring-primary-600/5 focus:border-primary-600 font-bold text-slate-900 appearance-none transition-all cursor-pointer text-sm shadow-inner"
-                                                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                                                >
-                                                    <option value="">CHOOSE SLOT</option>
-                                                    {timeSlots.map(slot => (
-                                                        <option key={slot} value={slot}>{slot.toUpperCase()}</option>
-                                                    ))}
-                                                </select>
+                                        {/* Time Slots */}
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Time Slot *</label>
+                                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                                {timeSlots.map(slot => (
+                                                    <button
+                                                        key={slot}
+                                                        type="button"
+                                                        onClick={() => setFormData({ ...formData, time: slot })}
+                                                        className={`py-2 px-2 rounded-xl text-[11px] font-bold transition-all border ${formData.time === slot
+                                                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm shadow-emerald-200'
+                                                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-emerald-300 hover:text-emerald-600 hover:bg-emerald-50'
+                                                        }`}
+                                                    >
+                                                        {slot}
+                                                    </button>
+                                                ))}
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-4">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2 font-black">Clinical Intent Description</label>
+                                    <div className="px-6 py-4 border-t border-slate-50 border-b bg-slate-50/30 flex items-center gap-3">
+                                        <div className="h-8 w-8 bg-violet-50 rounded-lg flex items-center justify-center">
+                                            <Stethoscope size={15} className="text-violet-600" />
+                                        </div>
+                                        <h3 className="text-sm font-bold text-slate-700">Reason for Visit</h3>
+                                    </div>
+                                    <div className="p-6">
                                         <textarea
-                                            rows="4"
-                                            className="w-full p-8 bg-slate-50 border border-slate-100 rounded-[2rem] outline-none focus:ring-8 focus:ring-primary-600/5 focus:border-primary-600 font-bold text-slate-900 transition-all placeholder:text-slate-300 text-sm shadow-inner"
-                                            placeholder="Synchronize clinical rationale and primary symptoms for specialist review..."
+                                            rows="3"
+                                            value={formData.reason}
+                                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm font-medium text-slate-800 transition-all placeholder:text-slate-300 resize-none"
+                                            placeholder="Briefly describe your symptoms or reason for consultation..."
                                             onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                                         ></textarea>
                                     </div>
 
-                                    <div className="flex flex-col sm:flex-row gap-6 pt-10">
+                                    {/* Action buttons */}
+                                    <div className="px-6 py-4 border-t border-slate-50 flex gap-3">
                                         <button
                                             type="button"
                                             onClick={prevStep}
-                                            className="px-12 py-5 bg-slate-100 text-slate-500 rounded-[2rem] font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all shadow-sm active:scale-95"
+                                            className="px-5 py-2.5 bg-slate-50 text-slate-600 rounded-xl font-bold text-xs border border-slate-200 hover:bg-slate-100 transition-all"
                                         >
-                                            Abort Step
+                                            Back
                                         </button>
                                         <button
                                             onClick={handleSubmit}
                                             disabled={loading}
-                                            className="flex-1 py-5 bg-slate-900 text-white rounded-[2rem] font-black text-[11px] uppercase tracking-[0.3em] shadow-2xl shadow-slate-900/40 hover:bg-black transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 flex items-center justify-center gap-4 relative overflow-hidden group/submit"
+                                            className="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all shadow-sm shadow-emerald-200 disabled:opacity-60 flex items-center justify-center gap-2 active:scale-[0.98]"
                                         >
-                                            <div className="absolute inset-0 bg-gradient-to-r from-primary-600 to-indigo-600 opacity-0 group-hover/submit:opacity-100 transition-opacity"></div>
-                                            <span className="relative z-10">{loading ? 'Processing Sync...' : 'Finalize Authorization'}</span>
-                                            <div className="relative z-10 h-6 w-6 rounded-lg bg-white/20 flex items-center justify-center group-hover/submit:translate-x-1 transition-transform">
-                                                {loading ? <div className="h-3 w-3 border-2 border-white/50 border-t-white rounded-full animate-spin"></div> : <Check size={14} strokeWidth={4} />}
-                                            </div>
+                                            {loading ? (
+                                                <>
+                                                    <div className="h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>
+                                                    Processing...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <CheckCircle2 size={16} /> Proceed to Payment
+                                                </>
+                                            )}
                                         </button>
+                                    </div>
+                                </div>
+
+                                {/* Booking Summary sidebar */}
+                                <div className="space-y-4">
+                                    {/* Doctor summary */}
+                                    {selectedDoctor && (
+                                        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                                            <div className="px-5 py-4 border-b border-slate-50 flex items-center gap-2">
+                                                <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                                                <h3 className="text-xs font-bold text-slate-700">Selected Doctor</h3>
+                                            </div>
+                                            <div className="p-5">
+                                                <div className="flex items-center gap-3 mb-4">
+                                                    <div className="h-12 w-12 rounded-xl overflow-hidden border-2 border-emerald-100 flex-shrink-0">
+                                                        <img
+                                                            src={selectedDoctor.profileImage && selectedDoctor.profileImage !== 'default-avatar.png'
+                                                                ? (selectedDoctor.profileImage.startsWith('http') ? selectedDoctor.profileImage : `http://localhost:5000/${selectedDoctor.profileImage}`)
+                                                                : `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedDoctor.name)}&background=10b981&color=fff&bold=true`}
+                                                            alt={selectedDoctor.name}
+                                                            className="h-full w-full object-cover"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-bold text-slate-800">{selectedDoctor.name}</p>
+                                                        <p className="text-[11px] text-slate-400">{selectedDoctor.specialization}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                                                        <p className="text-sm font-black text-slate-800">{selectedDoctor.experience || 10}</p>
+                                                        <p className="text-[9px] text-slate-400 font-medium">Years exp</p>
+                                                    </div>
+                                                    <div className="p-2.5 bg-emerald-50 rounded-xl border border-emerald-100 text-center">
+                                                        <p className="text-sm font-black text-emerald-600">₹{selectedDoctor.consultationFee || 500}</p>
+                                                        <p className="text-[9px] text-slate-400 font-medium">Consult fee</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Booking info */}
+                                    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                                        <h3 className="text-xs font-bold text-slate-700 mb-3">Booking Summary</h3>
+                                        <div className="space-y-2.5">
+                                            {[
+                                                { label: 'Department', value: formData.department || '—', icon: Stethoscope },
+                                                { label: 'Date', value: formData.date || '—', icon: Calendar },
+                                                { label: 'Time', value: formData.time || '—', icon: Clock },
+                                            ].map((item, i) => (
+                                                <div key={i} className="flex items-center justify-between py-1.5 border-b border-slate-50 last:border-0">
+                                                    <div className="flex items-center gap-2 text-[11px] text-slate-400 font-medium">
+                                                        <item.icon size={12} className="text-slate-300" />
+                                                        {item.label}
+                                                    </div>
+                                                    <span className={`text-[11px] font-bold ${item.value !== '—' ? 'text-slate-700' : 'text-slate-300'}`}>{item.value}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Trust note */}
+                                    <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <Shield size={13} className="text-emerald-600" />
+                                            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wider">Secure Booking</span>
+                                        </div>
+                                        <p className="text-[11px] text-emerald-700 font-medium leading-relaxed">Your appointment details are encrypted and HIPAA compliant. You will receive a confirmation notification.</p>
                                     </div>
                                 </div>
                             </div>
                         </motion.div>
                     )}
 
-                    {/* Step 4: Success Terminal */}
+                    {/* ── Step 4: Review ── */}
                     {step === 4 && (
                         <motion.div
-                            key="success"
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className="bg-white p-20 rounded-[5rem] shadow-2xl border border-slate-50 text-center max-w-2xl mx-auto relative overflow-hidden group"
+                            key="step4"
+                            initial={{ opacity: 0, scale: 0.98 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.97 }}
+                            className="space-y-4"
                         >
-                            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary-500 to-emerald-500"></div>
-                            <div className="h-32 w-32 bg-emerald-50 text-emerald-600 rounded-[3rem] flex items-center justify-center mx-auto mb-10 shadow-xl shadow-emerald-500/10 group-hover:scale-110 group-hover:rotate-12 transition-all duration-700">
-                                <CheckCircle2 size={64} strokeWidth={2.5} />
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-base font-bold text-slate-800 tracking-tight">Review Your Appointment</h2>
+                                    <p className="text-[11px] text-slate-400 font-medium mt-0.5">Verify all details are correct before proceeding to payment</p>
+                                </div>
+                                <button onClick={prevStep} className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-emerald-600 transition-colors bg-white border border-slate-100 rounded-xl px-3 py-2 shadow-sm">
+                                    <ChevronLeft size={14} /> Back
+                                </button>
                             </div>
-                            <h2 className="text-4xl font-black text-slate-900 tracking-tighter mb-4 uppercase">Protocol Established</h2>
-                            <p className="text-slate-500 font-bold mb-12 text-lg max-w-sm mx-auto italic leading-relaxed">
-                                "Your clinical authorization request has been successfully broadasted to the specialist node."
-                            </p>
-                            <div className="grid sm:grid-cols-2 gap-4">
-                                <button
-                                    onClick={() => navigate('/patient/dashboard')}
-                                    className="py-5 bg-slate-900 text-white rounded-[2rem] font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-slate-900/20 hover:bg-black transition-all hover:-translate-y-1 active:scale-95"
-                                >
-                                    Return to Overview
-                                </button>
-                                <button
-                                    onClick={() => setStep(1)}
-                                    className="py-5 bg-slate-50 text-slate-500 rounded-[2rem] font-black text-[11px] uppercase tracking-[0.2em] border border-slate-100 hover:bg-white hover:shadow-xl transition-all active:scale-95"
-                                >
-                                    New Booking
-                                </button>
+
+                            <div className="max-w-xl mx-auto space-y-4">
+                                {/* Patient Info Card */}
+                                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                                    <div className="px-6 py-4 border-b border-slate-50 flex items-center gap-3 bg-slate-50/50">
+                                        <div className="h-8 w-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                                            <User size={15} className="text-blue-600" />
+                                        </div>
+                                        <h3 className="text-sm font-bold text-slate-700">Patient Information</h3>
+                                    </div>
+                                    <div className="p-6 space-y-3">
+                                        <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                                            <span className="text-sm text-slate-500 font-medium">Name</span>
+                                            <span className="font-bold text-slate-800">{formData.patientName}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                                            <span className="text-sm text-slate-500 font-medium">Age</span>
+                                            <span className="font-bold text-slate-800">{formData.patientAge} years</span>
+                                        </div>
+                                        <div className="flex items-center justify-between py-2">
+                                            <span className="text-sm text-slate-500 font-medium">Gender</span>
+                                            <span className="font-bold text-slate-800">{formData.patientGender}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Appointment Details Card */}
+                                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                                    <div className="px-6 py-4 border-b border-slate-50 flex items-center gap-3 bg-slate-50/50">
+                                        <div className="h-8 w-8 bg-emerald-50 rounded-lg flex items-center justify-center">
+                                            <Calendar size={15} className="text-emerald-600" />
+                                        </div>
+                                        <h3 className="text-sm font-bold text-slate-700">Appointment Details</h3>
+                                    </div>
+                                    <div className="p-6 space-y-3">
+                                        <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                                            <span className="text-sm text-slate-500 font-medium">Department</span>
+                                            <span className="font-bold text-slate-800">{formData.department}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                                            <span className="text-sm text-slate-500 font-medium">Date</span>
+                                            <span className="font-bold text-slate-800">{new Date(formData.date).toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between py-2">
+                                            <span className="text-sm text-slate-500 font-medium">Time</span>
+                                            <span className="font-bold text-slate-800">{formData.time}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Doctor Info Card */}
+                                {selectedDoctor && (
+                                    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                                        <div className="px-6 py-4 border-b border-slate-50 flex items-center gap-3 bg-slate-50/50">
+                                            <div className="h-8 w-8 bg-violet-50 rounded-lg flex items-center justify-center">
+                                                <User size={15} className="text-violet-600" />
+                                            </div>
+                                            <h3 className="text-sm font-bold text-slate-700">Doctor Information</h3>
+                                        </div>
+                                        <div className="p-6">
+                                            <div className="flex items-center gap-4 mb-4">
+                                                <div className="h-16 w-16 rounded-xl overflow-hidden border-2 border-slate-200 flex-shrink-0">
+                                                    <img
+                                                        src={selectedDoctor.profileImage && selectedDoctor.profileImage !== 'default-avatar.png'
+                                                            ? (selectedDoctor.profileImage.startsWith('http') ? selectedDoctor.profileImage : `http://localhost:5000/${selectedDoctor.profileImage}`)
+                                                            : `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedDoctor.name)}&background=10b981&color=fff&bold=true`}
+                                                        alt={selectedDoctor.name}
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-slate-800 text-sm">Dr. {selectedDoctor.name}</p>
+                                                    <p className="text-sm text-slate-500">{selectedDoctor.specialization}</p>
+                                                    <div className="flex items-center gap-4 mt-2 text-xs">
+                                                        <span className="text-slate-600"><span className="font-bold text-slate-800">{selectedDoctor.experience || 10}</span> yrs exp</span>
+                                                        <span className="text-emerald-600"><span className="font-bold">₹{selectedDoctor.consultationFee || 500}</span> fee</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Reason Card */}
+                                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                                    <div className="px-6 py-4 border-b border-slate-50 flex items-center gap-3 bg-slate-50/50">
+                                        <div className="h-8 w-8 bg-rose-50 rounded-lg flex items-center justify-center">
+                                            <Stethoscope size={15} className="text-rose-600" />
+                                        </div>
+                                        <h3 className="text-sm font-bold text-slate-700">Reason for Visit</h3>
+                                    </div>
+                                    <div className="p-6">
+                                        <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 rounded-lg p-3 border border-slate-100">{formData.reason}</p>
+                                    </div>
+                                </div>
+
+                                {/* Amount Summary */}
+                                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl border border-emerald-100 shadow-sm p-6">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm text-slate-600 font-medium">Consultation Fee</p>
+                                            <p className="text-xs text-slate-500 mt-0.5">To be paid to Dr. {selectedDoctor?.name}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-2xl font-black text-emerald-600">₹{selectedDoctor?.consultationFee || 500}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-3 pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={prevStep}
+                                        className="px-6 py-3 bg-slate-50 text-slate-600 rounded-xl font-bold text-sm border border-slate-200 hover:bg-slate-100 transition-all"
+                                    >
+                                        Back
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            const consultationFee = selectedDoctor?.consultationFee || 500;
+                                            setPaymentAmount(consultationFee);
+                                            setShowPayment(true);
+                                        }}
+                                        className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all shadow-sm shadow-emerald-200 flex items-center justify-center gap-2 active:scale-[0.98]"
+                                    >
+                                        <CheckCircle2 size={16} /> Proceed to Payment
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* ── Step 5: Success ── */}
+                    {step === 5 && (
+                        <motion.div
+                            key="success"
+                            initial={{ scale: 0.93, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="max-w-lg mx-auto"
+                        >
+                            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden text-center">
+                                <div className="h-1.5 w-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-500"></div>
+                                <div className="p-10">
+                                    <motion.div
+                                        initial={{ scale: 0, rotate: -20 }}
+                                        animate={{ scale: 1, rotate: 0 }}
+                                        transition={{ type: 'spring', delay: 0.2 }}
+                                        className="h-20 w-20 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-6"
+                                    >
+                                        <CheckCircle2 size={40} className="text-emerald-600" strokeWidth={2} />
+                                    </motion.div>
+
+                                    <h2 className="text-xl font-bold text-slate-800 tracking-tight mb-2">Appointment Confirmed!</h2>
+                                    <p className="text-sm text-slate-500 font-medium mb-2">Your appointment has been successfully booked.</p>
+                                    <p className="text-xs text-slate-400 font-medium mb-8">A confirmation has been sent. Please arrive 10 minutes early.</p>
+
+                                    <div className="bg-slate-50 rounded-xl border border-slate-100 p-4 mb-6 text-left space-y-2.5">
+                                        {[
+                                            { label: 'Department', value: formData.department },
+                                            { label: 'Date', value: formData.date },
+                                            { label: 'Time', value: formData.time },
+                                        ].map((item, i) => (
+                                            <div key={i} className="flex items-center justify-between text-xs">
+                                                <span className="text-slate-400 font-medium">{item.label}</span>
+                                                <span className="font-bold text-slate-700">{item.value}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button
+                                            onClick={() => navigate('/patient/dashboard')}
+                                            className="py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all shadow-sm shadow-emerald-200"
+                                        >
+                                            Go to Dashboard
+                                        </button>
+                                        <button
+                                            onClick={() => { setStep(1); setFormData({ doctor: '', department: '', date: '', time: '', reason: '', patientName: user?.name || '', patientAge: '', patientGender: '' }); setError(''); }}
+                                            className="py-3 bg-slate-50 text-slate-600 rounded-xl font-bold text-sm border border-slate-200 hover:bg-white hover:shadow-sm transition-all"
+                                        >
+                                            Book Another
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {/* Razorpay Payment Modal */}
+                <RazorpayPayment
+                    isOpen={showPayment}
+                    onClose={() => setShowPayment(false)}
+                    amount={paymentAmount}
+                    doctorName={selectedDoctor?.name || ''}
+                    appointmentDetails={{
+                        email: user?.email,
+                        phone: user?.phone,
+                        date: formData.date,
+                        time: formData.time
+                    }}
+                    onPaymentSuccess={handlePaymentSuccess}
+                />
             </div>
         </DashboardLayout>
     );

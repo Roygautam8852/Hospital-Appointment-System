@@ -4,9 +4,17 @@ import Navbar from './components/Navbar';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import DoctorLogin from './pages/DoctorLogin';
 import PatientDashboard from './pages/PatientDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminLogin from './pages/AdminLogin';
+import AdminDoctors from './pages/AdminDoctors';
+import AdminPatients from './pages/AdminPatients';
+import AdminAppointments from './pages/AdminAppointments';
+import AdminServices from './pages/AdminServices';
+import AdminRevenue from './pages/AdminRevenue';
+import AdminSettings from './pages/AdminSettings';
 import BookAppointment from './pages/BookAppointment';
 import MyHistory from './pages/MyHistory';
 import MedicalRecords from './pages/MedicalRecords';
@@ -52,7 +60,9 @@ const AppContent = () => {
     // Pages that should NOT have the global Navbar
     const hideNavbar = [
         '/login',
-        '/signup'
+        '/signup',
+        '/doctor-login',
+        '/admin-login'
     ].includes(pathname) ||
         pathname.startsWith('/patient') ||
         pathname.startsWith('/doctor') ||
@@ -76,6 +86,22 @@ const AppContent = () => {
                     element={
                         <PublicRoute>
                             <Signup />
+                        </PublicRoute>
+                    }
+                />
+                <Route
+                    path="/doctor-login"
+                    element={
+                        <PublicRoute>
+                            <DoctorLogin />
+                        </PublicRoute>
+                    }
+                />
+                <Route
+                    path="/admin-login"
+                    element={
+                        <PublicRoute>
+                            <AdminLogin />
                         </PublicRoute>
                     }
                 />
@@ -146,6 +172,54 @@ const AppContent = () => {
                     element={
                         <PrivateRoute roles={['admin']}>
                             <AdminDashboard />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/admin/doctors"
+                    element={
+                        <PrivateRoute roles={['admin']}>
+                            <AdminDoctors />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/admin/patients"
+                    element={
+                        <PrivateRoute roles={['admin']}>
+                            <AdminPatients />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/admin/appointments"
+                    element={
+                        <PrivateRoute roles={['admin']}>
+                            <AdminAppointments />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/admin/services"
+                    element={
+                        <PrivateRoute roles={['admin']}>
+                            <AdminServices />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/admin/revenue"
+                    element={
+                        <PrivateRoute roles={['admin']}>
+                            <AdminRevenue />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/admin/settings"
+                    element={
+                        <PrivateRoute roles={['admin']}>
+                            <AdminSettings />
                         </PrivateRoute>
                     }
                 />

@@ -101,3 +101,78 @@ exports.getMe = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+// @desc    Update profile
+// @route   PUT /api/auth/updateprofile
+// @access  Private
+exports.updateProfile = async (req, res) => {
+    try {
+        const allowedFields = [
+            'name', 'email', 'phone', 'address', 'bloodGroup',
+            'height', 'weight', 'dob', 'gender',
+            'emergencyContact', 'emergencyPhone', 'allergies', 'insurance',
+        ];
+        const updates = {};
+        allowedFields.forEach((field) => {
+            if (req.body[field] !== undefined) updates[field] = req.body[field];
+        });
+
+        const user = await User.findByIdAndUpdate(
+            req.user.id,
+            updates,
+            { new: true, runValidators: true }
+        );
+
+        res.status(200).json({ success: true, user });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Update password
+// @route   PUT /api/auth/updatepassword
+// @access  Private
+exports.updatePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ success: false, message: 'Please provide both current and new password' });
+        }
+
+        const user = await User.findById(req.user.id).select('+password');
+        const isMatch = await user.matchPassword(currentPassword);
+        if (!isMatch) {
+            return res.status(401).json({ success: false, message: 'Current password is incorrect' });
+        }
+
+        user.password = newPassword;
+        await user.save();
+
+        res.status(200).json({ success: true, message: 'Password updated successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Upload avatar
+// @route   POST /api/auth/uploadavatar
+// @access  Private
+exports.uploadAvatar = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'No file uploaded' });
+        }
+
+        const profileImage = `uploads/${req.file.filename}`;
+        const user = await User.findByIdAndUpdate(
+            req.user.id,
+            { profileImage },
+            { new: true }
+        );
+
+        res.status(200).json({ success: true, user });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

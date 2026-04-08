@@ -22,9 +22,9 @@ app.use(express.json());
 // Cookie parser
 app.use(cookieParser());
 
-// Enable CORS
+// Enable CORS — allow any localhost port (Vite may use 5173, 5174, etc.)
 app.use(cors({
-    origin: 'http://localhost:5173', // Vite default port
+    origin: /^http:\/\/localhost:\d+$/,
     credentials: true
 }));
 
@@ -33,12 +33,22 @@ const auth = require('./routes/authRoutes');
 const appointments = require('./routes/appointmentRoutes');
 const doctors = require('./routes/doctorRoutes');
 const prescriptions = require('./routes/prescriptionRoutes');
+const payment = require('./routes/paymentRoutes');
+const notifications = require('./routes/notificationRoutes');
+const medicalRecords = require('./routes/medicalRecordsRoutes');
+const admin = require('./routes/adminRoutes');
+const public = require('./routes/publicRoutes');
 
 // Mount routers
+app.use('/api', public); // Public routes at /api/doctors, /api/services
 app.use('/api/auth', auth);
 app.use('/api/appointments', appointments);
 app.use('/api/doctors', doctors);
 app.use('/api/prescriptions', prescriptions);
+app.use('/api/payment', payment);
+app.use('/api/notifications', notifications);
+app.use('/api/medical-records', medicalRecords);
+app.use('/api/admin', admin);
 
 app.get('/', (req, res) => {
     res.send('API is running...');

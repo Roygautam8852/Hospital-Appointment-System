@@ -29,12 +29,18 @@ import {
     CheckCircle2,
     Lock,
     UserCircle,
-    Star as StarIcon
+    Star as StarIcon,
+    ChevronDown,
+    ChevronUp
 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
+
+const API = 'http://localhost:5000/api';
+const UPLOADS_URL = 'http://localhost:5000/uploads/';
 
 const testimonials = [
     {
@@ -67,20 +73,40 @@ const testimonials = [
     }
 ];
 
-const doctors = [
-    { name: 'Dr. David Kim', spec: 'Oncologist', exp: '7 years Experience', rate: 4.9, img: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=400' },
-    { name: 'Dr. Emily Rodriguez', spec: 'Pediatrician', exp: '8 years Experience', rate: 4.8, img: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?auto=format&fit=crop&q=80&w=400' },
-    { name: 'Dr. Kabir Malhotra', spec: 'Nephrologist', exp: '7 years Experience', rate: 5.0, img: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=400' },
-    { name: 'Dr. Rahul Sharma', spec: 'Cardiologist', exp: '10 years Experience', rate: 4.9, img: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400' },
-    { name: 'Dr. Rohan Mehta', spec: 'ENT Specialist', exp: '5 years Experience', rate: 4.7, img: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&q=80&w=400' },
-    { name: 'Dr. Sarah Johnson', spec: 'Cardiologist', exp: '9 years Experience', rate: 4.9, img: 'https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&q=80&w=400' },
-    { name: 'Dr. Ananya Iyer', spec: 'Neurologist', exp: '6 years Experience', rate: 4.8, img: 'https://images.unsplash.com/photo-1651008376811-b90baee60c1f?auto=format&fit=crop&q=80&w=400' },
-    { name: 'Dr. James Wilson', spec: 'Orthopedic Surgeon', exp: '12 years Experience', rate: 4.9, img: 'https://images.unsplash.com/photo-1581056771107-24ca5f033842?auto=format&fit=crop&q=80&w=400' },
-];
+// Fallback icons mapping for services
+const IconMap = {
+    HeartPulse, Droplets, Microscope, FileSearch, Stethoscope, Bone, Activity, Brain, Baby, Shield, Clock, Users
+};
 
 const LandingPage = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
+
+    const [doctors, setDoctors] = useState([]);
+    const [services, setServices] = useState([]);
+    const [showAllDoctors, setShowAllDoctors] = useState(false);
+    const [showAllServices, setShowAllServices] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    const doctorsLimit = 8;
+    const servicesLimit = 6;
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [docsRes, servRes] = await Promise.all([
+                    axios.get(`${API}/doctors`),
+                    axios.get(`${API}/services`)
+                ]);
+                if (docsRes.data.success) setDoctors(docsRes.data.data);
+                if (servRes.data.success) setServices(servRes.data.data);
+            } catch (err) {
+                console.error("Error fetching data:", err);
+            }
+            setLoading(false);
+        };
+        fetchData();
+    }, []);
 
     const handleBookClick = () => {
         if (user) {
@@ -89,6 +115,20 @@ const LandingPage = () => {
             navigate('/login');
         }
     };
+
+    const getImageUrl = (img) => {
+        if (!img) return null;
+        if (img.startsWith('http')) return img;
+        return UPLOADS_URL + img;
+    };
+
+    const formatDoctorName = (name) => {
+        if (!name) return "";
+        return name.toLowerCase().startsWith("dr.") ? name : `Dr. ${name}`;
+    };
+
+    const displayedDoctors = showAllDoctors ? doctors : doctors.slice(0, doctorsLimit);
+    const displayedServices = showAllServices ? services : services.slice(0, servicesLimit);
 
     return (
         <div className="bg-white text-slate-900 font-sans">
@@ -106,10 +146,10 @@ const LandingPage = () => {
                                 transition={{ duration: 0.6 }}
                             >
                                 <div className="flex items-center gap-2 mb-4">
-                                    <div className="h-9 w-9 bg-primary-100 rounded-full flex items-center justify-center">
-                                        <Stethoscope className="text-primary-600 h-4.5 w-4.5" />
+                                    <div className="h-9 w-9 bg-emerald-100 rounded-full flex items-center justify-center">
+                                        <Stethoscope className="text-emerald-600 h-4.5 w-4.5" />
                                     </div>
-                                    <h1 className="text-2xl lg:text-3xl font-bold text-primary-600 tracking-tight">MediCare+</h1>
+                                    <h1 className="text-2xl lg:text-3xl font-bold text-emerald-600 tracking-tight">MediCare+</h1>
                                 </div>
 
                                 <div className="flex gap-1 mb-4 text-emerald-400">
@@ -118,7 +158,7 @@ const LandingPage = () => {
 
                                 <h2 className="text-xl lg:text-3xl font-bold mb-6 text-slate-800 leading-tight">
                                     Premium Healthcare <br />
-                                    <span className="text-primary-600">At Your Fingertips</span>
+                                    <span className="text-emerald-600">At Your Fingertips</span>
                                 </h2>
 
                                 {/* Feature Badges */}
@@ -127,7 +167,7 @@ const LandingPage = () => {
                                         { icon: CheckCircle2, text: 'Certified Specialists' },
                                         { icon: Clock, text: '24/7 Availability' },
                                         { icon: Lock, text: 'Safe & Secure' },
-                                        { icon: Users, text: '500+ Doctors' },
+                                        { icon: Users, text: '100+ Doctors' },
                                     ].map((badge, i) => (
                                         <div key={i} className="flex items-center gap-2 bg-emerald-50 px-3 py-2.5 rounded-xl border border-emerald-100/50">
                                             <badge.icon size={14} className="text-emerald-600" />
@@ -137,7 +177,7 @@ const LandingPage = () => {
                                 </div>
 
                                 <div className="flex flex-wrap gap-3">
-                                    <button onClick={handleBookClick} className="px-6 py-3 bg-primary-600 text-white rounded-lg font-bold text-sm tracking-wide flex items-center gap-2 hover:bg-primary-700 transition-all shadow-md shadow-primary-200">
+                                    <button onClick={handleBookClick} className="px-6 py-3 bg-emerald-600 text-white rounded-lg font-bold text-sm tracking-wide flex items-center gap-2 hover:bg-emerald-700 transition-all shadow-md shadow-emerald-200">
                                         Book Appointment Now
                                     </button>
                                     <div className="flex items-center gap-3 bg-red-50/50 px-5 py-2.5 rounded-xl border border-red-100/50 group cursor-pointer hover:bg-red-50 transition-colors">
@@ -158,11 +198,11 @@ const LandingPage = () => {
                                 transition={{ duration: 0.8 }}
                                 className="relative lg:flex justify-end hidden"
                             >
-                                <div className="max-w-[300px] w-full relative">
+                                <div className="max-w-[360px] w-full relative">
                                     <img
                                         src="https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&q=80&w=800"
                                         alt="Medical Team"
-                                        className="rounded-[2rem] shadow-lg w-full h-[340px] object-cover object-top"
+                                        className="rounded-[2rem] shadow-lg w-full h-[400px] object-cover object-top"
                                         onError={(e) => {
                                             e.target.onerror = null;
                                             e.target.src = "https://images.unsplash.com/photo-1576091160550-217359f4ecf8?auto=format&fit=crop&q=80&w=800";
@@ -173,7 +213,7 @@ const LandingPage = () => {
                                             <Users size={16} />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-bold text-slate-800">500+</p>
+                                            <p className="text-sm font-bold text-slate-800">{doctors.length}+</p>
                                             <p className="text-[10px] font-semibold text-slate-400">Active Doctors</p>
                                         </div>
                                     </div>
@@ -233,54 +273,54 @@ const LandingPage = () => {
                     </div>
 
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {[
-                            { name: 'Blood Pressure Check', icon: HeartPulse, img: 'https://media.istockphoto.com/id/1491274818/photo/doctor-measures-the-pressure-of-the-patient-during-a-medical-examination-and-consultation-in.jpg?s=612x612&w=0&k=20&c=tMvTo_z0iugOeRWhUnK1BkzgOC1SnpImvYrAYvix3Ac=', desc: 'Professional blood pressure monitoring and heart health assessment.' },
-                            { name: 'Blood Sugar Test', icon: Droplets, img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRB5PTT3xFBIYGQ1Kz2wX4EsIGxwmEbitufGg&s', desc: 'Accurate screening for glucose levels and diabetes prevention management.' },
-                            { name: 'Full Blood Count', icon: Microscope, img: 'https://allcheckedup.co.uk/wp-content/uploads/2023/09/full-blood-count-blood-test-min-1024x683.jpg', desc: 'Comprehensive laboratory analysis of blood cells and vital health markers.' },
-                            { name: 'X-Ray Scan', icon: FileSearch, img: 'https://play-lh.googleusercontent.com/aaUQ-N3m8SIhG3CWx9ou4Ns8eFr3dMRS9OqxGmmx7SB-t8gCi_G9L5spD6K13l3X1w=w240-h480-rw', desc: 'High-precision digital imaging for detailed internal diagnostics.' },
-                            { name: 'Dental Care', icon: Stethoscope, img: 'https://media.istockphoto.com/id/1485043284/photo/dentistry-concept.jpg?s=612x612&w=0&k=20&c=fE5W33mz4bFiV_j9-YQxxOJtFYE-kWLApIFwRu3xO2I=', desc: 'Holistic oral examinations and professional dental hygiene services.' },
-                            {
-                                name: 'Orthopedic & Fracture Care',
-                                icon: Bone,
-                                img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQGmnTUSOTSVx8X9VN9Wb2eoZnYnVJKdBheBg&s',
-                                desc: 'Comprehensive orthopedic solutions including fracture management, bone alignment, and trauma recovery care.'
-                            },
-                        ].map((service, i) => (
-                            <motion.div
-                                key={i}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.1 }}
-                                whileHover={{ y: -8 }}
-                                className="bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:border-emerald-100 transition-all duration-500 overflow-hidden group"
-                            >
-                                <div className="h-32 w-full overflow-hidden relative">
-                                    <img
-                                        src={service.img}
-                                        alt={service.name}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                                        onError={(e) => {
-                                            e.target.onerror = null;
-                                            e.target.src = "https://images.unsplash.com/photo-1505751172107-1ba9321da3be?auto=format&fit=crop&q=80&w=400";
-                                        }}
-                                    />
-                                    <div className="absolute top-3 left-3 h-8 w-8 bg-white/95 backdrop-blur-sm rounded-lg flex items-center justify-center text-emerald-600 shadow-lg border border-white/50">
-                                        <service.icon size={14} />
+                        {displayedServices.map((service, i) => {
+                            const ServiceIcon = IconMap[service.icon] || Stethoscope;
+                            const serviceImg = service.image || service.img;
+                            return (
+                                <motion.div
+                                    key={service._id || i}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: i * 0.05 }}
+                                    whileHover={{ y: -8 }}
+                                    className="bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:border-emerald-100 transition-all duration-500 overflow-hidden group"
+                                >
+                                    <div className="h-40 w-full overflow-hidden relative">
+                                        <img
+                                            src={serviceImg ? (serviceImg.startsWith('http') ? serviceImg : UPLOADS_URL + serviceImg) : "https://images.unsplash.com/photo-1505751172107-1ba9321da3be?auto=format&fit=crop&q=80&w=400"}
+                                            alt={service.name}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = "https://images.unsplash.com/photo-1505751172107-1ba9321da3be?auto=format&fit=crop&q=80&w=400";
+                                            }}
+                                        />
+                                        <div className="absolute top-3 left-3 h-8 w-8 bg-white/95 backdrop-blur-sm rounded-lg flex items-center justify-center text-emerald-600 shadow-lg border border-white/50">
+                                            <ServiceIcon size={14} />
+                                        </div>
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                     </div>
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                </div>
-                                <div className="p-5">
-                                    <h4 className="text-base font-bold text-slate-800 mb-1 leading-tight">{service.name}</h4>
-                                    <p className="text-xs text-slate-500 leading-relaxed italic pr-4">
-                                        "{service.desc}"
-                                    </p>
-                                    <div className="mt-4 flex items-center gap-2 text-emerald-600 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
-                                        Learn More <ArrowRight size={12} />
+                                    <div className="p-6">
+                                        <h4 className="text-base font-bold text-slate-800 mb-1 leading-tight">{service.name}</h4>
+                                        <p className="text-[11px] text-slate-500 leading-relaxed italic line-clamp-2">
+                                            "{service.description}"
+                                        </p>
+                                        <div className="mt-4 flex items-center gap-2 text-emerald-600 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+                                            Learn More <ArrowRight size={12} />
+                                        </div>
                                     </div>
-                                </div>
-                            </motion.div>
-                        ))}
+                                </motion.div>
+                            );
+                        })}
                     </div>
+
+                    {services.length > servicesLimit && (
+                        <div className="mt-12 text-center">
+                            <button onClick={() => setShowAllServices(!showAllServices)} className="py-2.5 px-8 bg-white border-2 border-emerald-600 text-emerald-600 rounded-xl font-bold text-xs flex items-center gap-2 mx-auto hover:bg-emerald-600 hover:text-white transition-all shadow-md">
+                                {showAllServices ? <><ChevronUp size={16} /> Show Less</> : <><ChevronDown size={16} /> Show More Services</>}
+                            </button>
+                        </div>
+                    )}
                 </div>
             </section>
 
@@ -288,21 +328,22 @@ const LandingPage = () => {
             <section id="doctors" className="py-20 px-4 bg-slate-50/50">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-12">
-                        <h2 className="text-3xl lg:text-4xl font-bold text-slate-800 mb-3">Our <span className="text-emerald-600 text-primary-600">Medical</span> Team</h2>
+                        <h2 className="text-3xl lg:text-4xl font-bold text-slate-800 mb-3">Our <span className="text-emerald-600">Medical</span> Team</h2>
                         <p className="text-slate-500 text-sm font-medium">Book appointments quickly with our verified specialists.</p>
                     </div>
 
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {doctors.map((doc, i) => (
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {displayedDoctors.map((doc, i) => (
                             <motion.div
-                                key={i}
+                                key={doc._id || i}
                                 initial={{ opacity: 0, y: 15 }}
                                 whileInView={{ opacity: 1, y: 0 }}
-                                className="bg-white rounded-[2rem] overflow-hidden shadow-sm border border-slate-100 hover:shadow-xl transition-all group"
+                                transition={{ delay: i * 0.05 }}
+                                className="bg-white rounded-[1.5rem] overflow-hidden shadow-sm border border-slate-100 hover:shadow-xl transition-all group max-w-sm mx-auto w-full"
                             >
-                                <div className="h-64 overflow-hidden relative">
+                                <div className="h-52 overflow-hidden relative">
                                     <img
-                                        src={doc.img}
+                                        src={getImageUrl(doc.profileImage) || `https://ui-avatars.com/api/?name=${encodeURIComponent(doc.name)}&background=10b981&color=fff&bold=true`}
                                         alt={doc.name}
                                         className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700"
                                         onError={(e) => {
@@ -310,26 +351,34 @@ const LandingPage = () => {
                                             e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(doc.name)}&background=10b981&color=fff&bold=true`;
                                         }}
                                     />
-                                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-md">
-                                        <StarIcon size={12} className="text-emerald-400" fill="currentColor" />
-                                        <span className="text-[10px] font-black">{doc.rate}</span>
+                                    <div className="absolute top-2.5 right-2.5 bg-white/90 backdrop-blur-sm px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-md">
+                                        <StarIcon size={10} className="text-emerald-400" fill="currentColor" />
+                                        <span className="text-[9px] font-black">{doc.ratings || '5.0'}</span>
                                     </div>
                                 </div>
-                                <div className="p-6 text-center">
-                                    <h4 className="text-lg font-bold text-slate-800 mb-0.5">{doc.name}</h4>
-                                    <p className="text-emerald-600 font-semibold text-xs mb-3">{doc.spec}</p>
+                                <div className="p-4 text-center">
+                                    <h4 className="text-base font-bold text-slate-800 mb-0.5">{formatDoctorName(doc.name)}</h4>
+                                    <p className="text-emerald-600 font-semibold text-[11px] mb-2">{doc.specialization}</p>
 
-                                    <div className="bg-emerald-50 border border-emerald-100 rounded-lg py-1 px-3 inline-block mb-4">
-                                        <span className="text-[10px] font-bold text-emerald-700">{doc.exp}</span>
+                                    <div className="bg-emerald-50 border border-emerald-100 rounded-lg py-1 px-2.5 inline-block mb-3">
+                                        <span className="text-[9px] font-bold text-emerald-700">{doc.experience} years Experience</span>
                                     </div>
 
-                                    <button onClick={handleBookClick} className="w-full py-2 bg-primary-600 text-white rounded-lg font-bold text-[11px] flex items-center justify-center gap-2 hover:bg-primary-700 transition-all shadow-md shadow-primary-50">
-                                        <CalendarIcon size={14} /> Book Now
+                                    <button onClick={handleBookClick} className="w-full py-2 bg-emerald-600 text-white rounded-lg font-bold text-[10px] flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all shadow-md">
+                                        <CalendarIcon size={13} /> Book Now
                                     </button>
                                 </div>
                             </motion.div>
                         ))}
                     </div>
+
+                    {doctors.length > doctorsLimit && (
+                        <div className="mt-12 text-center">
+                            <button onClick={() => setShowAllDoctors(!showAllDoctors)} className="py-2.5 px-8 bg-white border-2 border-emerald-600 text-emerald-600 rounded-xl font-bold text-xs flex items-center gap-2 mx-auto hover:bg-emerald-600 hover:text-white transition-all shadow-md">
+                                {showAllDoctors ? <><ChevronUp size={16} /> Show Less</> : <><ChevronDown size={16} /> Show More Doctors</>}
+                            </button>
+                        </div>
+                    )}
                 </div>
             </section>
 
@@ -345,7 +394,7 @@ const LandingPage = () => {
                         {/* Professionals */}
                         <div>
                             <div className="flex items-center gap-2 mb-6 px-4">
-                                <Users size={20} className="text-primary-600" />
+                                <Users size={20} className="text-emerald-600" />
                                 <h3 className="text-sm font-bold text-slate-800">Medical Professionals</h3>
                             </div>
                             <div className="space-y-4">
@@ -424,7 +473,6 @@ const LandingPage = () => {
 
                 <div className="max-w-7xl mx-auto relative z-10">
                     <div className="grid lg:grid-cols-4 gap-12 mb-16">
-                        {/* Column 1 */}
                         <div className="col-span-1 lg:col-span-1">
                             <div className="flex items-center gap-2.5 mb-6">
                                 <div className="h-8 w-8 border-2 border-emerald-500 rounded-full flex items-center justify-center p-0.5">
@@ -442,18 +490,17 @@ const LandingPage = () => {
                             </p>
                             <div className="space-y-3">
                                 <p className="flex items-center gap-2.5 text-xs font-bold text-slate-600"><Phone size={14} className="text-emerald-600" /> +91 8090410 873</p>
-                                <p className="flex items-center gap-2.5 text-xs font-bold text-slate-600"><Mail size={14} className="text-emerald-600" /> hexagon.services@gmail.com</p>
+                                <p className="flex items-center gap-2.5 text-xs font-bold text-slate-600"><Mail size={14} className="text-emerald-600" /> info@medicare.com</p>
                                 <p className="flex items-center gap-2.5 text-xs font-bold text-slate-600"><MapPin size={14} className="text-emerald-600" /> Lucknow, India</p>
                             </div>
                         </div>
 
-                        {/* Column 2 */}
                         <div>
                             <h4 className="text-sm font-bold text-slate-800 mb-6 capitalize">Quick Links</h4>
                             <ul className="space-y-3">
                                 {['Home', 'Doctors', 'Services', 'Contact'].map((label, i) => (
                                     <li key={i}>
-                                        <a href="#" className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-emerald-600 transition-colors">
+                                        <a href={`#${label.toLowerCase()}`} className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-emerald-600 transition-colors">
                                             <div className="h-4 w-4 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
                                                 <CheckCircle2 size={8} />
                                             </div>
@@ -464,27 +511,18 @@ const LandingPage = () => {
                             </ul>
                         </div>
 
-                        {/* Column 3 */}
                         <div>
                             <h4 className="text-sm font-bold text-slate-800 mb-6 capitalize">Our Services</h4>
                             <ul className="space-y-3">
-                                {[
-                                    'Blood Pressure Check',
-                                    'Blood Sugar Test',
-                                    'Full Blood Count',
-                                    'X-Ray Scan',
-                                    'Dental Care',
-                                    'Orthopedic & Fracture Care',
-                                ].map((service, i) => (
+                                {services.slice(0, 6).map((service, i) => (
                                     <li key={i} className="flex items-center gap-2.5 text-xs font-bold text-slate-600">
                                         <div className="h-1.5 w-1.5 rounded-full bg-emerald-500"></div>
-                                        {service}
+                                        {service.name}
                                     </li>
                                 ))}
                             </ul>
                         </div>
 
-                        {/* Column 4 */}
                         <div>
                             <h4 className="text-sm font-bold text-slate-800 mb-6 capitalize">Stay Connected</h4>
                             <p className="text-slate-500 text-[11px] font-medium mb-4 italic">Subscribe for wellness insights delivered to your inbox.</p>
@@ -514,8 +552,8 @@ const LandingPage = () => {
                             <span className="text-xs font-bold text-slate-800">Designed By:</span>
                             <span className="text-xs font-bold text-emerald-600 capitalize">Hexagon Digital</span>
                         </div>
-                        <div className="h-8 w-8 bg-emerald-600 rounded-full flex items-center justify-center text-white shadow-md cursor-pointer hover:scale-110 transition-transform">
-                            <ArrowRight size={16} className="-rotate-45" />
+                        <div onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="h-8 w-8 bg-emerald-600 rounded-full flex items-center justify-center text-white shadow-md cursor-pointer hover:scale-110 transition-transform">
+                            <ArrowRight size={16} className="-rotate-90" />
                         </div>
                     </div>
                 </div>

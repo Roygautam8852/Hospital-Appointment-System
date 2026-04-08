@@ -124,9 +124,17 @@ const Navbar = () => {
                                 )}
                             </div>
                         ) : (
-                            <Link to="/login" className="px-5 py-2 bg-emerald-600 text-white rounded-full text-xs font-bold hover:bg-emerald-700 hover:scale-105 active:scale-95 transition-all shadow-md shadow-emerald-100">
-                                Login
-                            </Link>
+                            <div className="flex items-center gap-2">
+                                <Link
+                                    to="/doctor-login"
+                                    className="px-4 py-2 border border-slate-200 text-slate-600 rounded-full text-xs font-bold hover:border-emerald-300 hover:text-emerald-600 transition-all"
+                                >
+                                    Doctor Portal
+                                </Link>
+                                <Link to="/login" className="px-5 py-2 bg-emerald-600 text-white rounded-full text-xs font-bold hover:bg-emerald-700 hover:scale-105 active:scale-95 transition-all shadow-md shadow-emerald-100">
+                                    Patient Login
+                                </Link>
+                            </div>
                         )}
                     </div>
 
@@ -157,7 +165,8 @@ const Navbar = () => {
                     <div className="pt-4 border-t border-slate-50 flex flex-col gap-2">
                         {!user && (
                             <>
-                                <Link to="/login" onClick={() => setIsOpen(false)} className="px-4 py-3 bg-emerald-600 text-white rounded-lg text-center font-bold text-sm shadow-md">Login</Link>
+                                <Link to="/login" onClick={() => setIsOpen(false)} className="px-4 py-3 bg-emerald-600 text-white rounded-lg text-center font-bold text-sm shadow-md">Patient Login</Link>
+                                <Link to="/doctor-login" onClick={() => setIsOpen(false)} className="px-4 py-3 bg-white border border-slate-200 text-slate-700 rounded-lg text-center font-bold text-sm">Doctor Portal</Link>
                             </>
                         )}
                     </div>

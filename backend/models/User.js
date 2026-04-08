@@ -54,6 +54,17 @@ const userSchema = new mongoose.Schema({
       slots: [String],
     }
   ],
+  // Patient profile fields
+  address: { type: String },
+  bloodGroup: { type: String },
+  height: { type: String },
+  weight: { type: String },
+  dob: { type: String },
+  gender: { type: String },
+  emergencyContact: { type: String },
+  emergencyPhone: { type: String },
+  allergies: { type: String },
+  insurance: { type: String },
   // Patient specific fields
   medicalHistory: [
     {

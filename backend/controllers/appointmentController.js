@@ -6,26 +6,56 @@ const User = require('../models/User');
 // @access  Private
 exports.getAppointments = async (req, res) => {
     try {
+        const { page = 1, limit = 10, sortBy = 'date', order = 'desc' } = req.query;
+        const skip = (page - 1) * limit;
+
         let query;
+        let countQuery;
 
         // If patient, show only their appointments
         if (req.user.role === 'patient') {
-            query = Appointment.find({ patient: req.user.id }).populate('doctor', 'name specialization profileImage');
+            countQuery = Appointment.countDocuments({ patient: req.user._id });
+            query = Appointment.find({ patient: req.user._id })
+                .populate('doctor', 'name specialization profileImage phone email')
+                .skip(skip)
+                .limit(Number(limit));
         }
         // If doctor, show only appointments assigned to them
         else if (req.user.role === 'doctor') {
-            query = Appointment.find({ doctor: req.user.id }).populate('patient', 'name phone profileImage');
+            countQuery = Appointment.countDocuments({ doctor: req.user._id });
+            query = Appointment.find({ doctor: req.user._id })
+                .populate('patient', 'name phone profileImage email')
+                .skip(skip)
+                .limit(Number(limit));
         }
         // If admin, show all
         else {
-            query = Appointment.find().populate('patient doctor', 'name');
+            countQuery = Appointment.countDocuments({});
+            query = Appointment.find()
+                .populate('patient doctor', 'name profileImage')
+                .skip(skip)
+                .limit(Number(limit));
+        }
+
+        // Sorting
+        if (sortBy === 'date') {
+            query = query.sort({ date: order === 'asc' ? 1 : -1 });
+        } else if (sortBy === 'amount') {
+            query = query.sort({ amount: order === 'asc' ? 1 : -1 });
+        } else if (sortBy === 'status') {
+            query = query.sort({ status: 1 });
         }
 
         const appointments = await query;
+        const total = await countQuery;
+        const totalPages = Math.ceil(total / limit);
 
         res.status(200).json({
             success: true,
             count: appointments.length,
+            total,
+            page: Number(page),
+            totalPages,
             data: appointments,
         });
     } catch (error) {
@@ -38,7 +68,7 @@ exports.getAppointments = async (req, res) => {
 // @access  Private (Patient)
 exports.bookAppointment = async (req, res) => {
     try {
-        req.body.patient = req.user.id;
+        req.body.patient = req.user._id;
 
         // Check if doctor exists and is a doctor
         const doctor = await User.findById(req.body.doctor);
@@ -84,8 +114,8 @@ exports.updateAppointmentStatus = async (req, res) => {
 
         // Authorization check
         if (
-            appointment.doctor.toString() !== req.user.id &&
-            appointment.patient.toString() !== req.user.id &&
+            appointment.doctor.toString() !== req.user._id.toString() &&
+            appointment.patient.toString() !== req.user._id.toString() &&
             req.user.role !== 'admin'
         ) {
             return res.status(401).json({ success: false, message: 'Not authorized' });

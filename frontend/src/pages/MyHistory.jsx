@@ -1,385 +1,696 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import DashboardLayout from '../components/DashboardLayout';
-import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import DashboardLayout from "../components/DashboardLayout";
+import { useAuth } from "../context/AuthContext";
+import axios from "axios";
 import {
     Search,
     Filter,
     Download,
     Calendar,
-    ChevronRight,
-    MapPin,
     Clock,
     User,
-    MoreVertical,
     CheckCircle2,
-    XCircle,
-    Clock3,
     AlertCircle,
-    ArrowUpRight,
     FileText,
-    Activity,
-    History
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+    ArrowUpRight,
+    History,
+    Phone,
+    MapPin,
+    ShoppingCart,
+    TrendingUp,
+    Pill,
+    Heart,
+    RefreshCw,
+    ChevronDown,
+    X,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const MyHistory = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all');
-    const [dateRange, setDateRange] = useState('all');
+    const [error, setError] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [sortBy, setSortBy] = useState("date-desc"); // date-asc, date-desc, amount-asc, amount-desc
+    const [page, setPage] = useState(1);
+    const [itemsPerPage] = useState(10);
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+    const [dateRange, setDateRange] = useState({ from: "", to: "" });
+    const [selectedAppointment, setSelectedAppointment] = useState(null);
+    const [showDetailModal, setShowDetailModal] = useState(false);
+
+    // Helper function to check if appointment is expired
+    const isAppointmentExpired = (appointmentDate) => {
+        const now = new Date();
+        const apptDate = new Date(appointmentDate);
+        return apptDate < now;
+    };
+
+    // Helper function to get appointment status including expired
+    const getAppointmentStatus = (apt) => {
+        if (isAppointmentExpired(apt.date) && apt.status !== 'completed' && apt.status !== 'cancelled') {
+            return 'expired';
+        }
+        return apt.status;
+    };
+
+    // Fetch appointments with real-time updates
+    const fetchAppointments = async () => {
+        try {
+            setError(null);
+            const token = localStorage.getItem("token");
+            const res = await axios.get("http://localhost:5000/api/appointments", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (res.data.success) {
+                setAppointments(res.data.data || []);
+            }
+        } catch (err) {
+            setError("Failed to load appointments. Please try again.");
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchAppointments = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const res = await axios.get('http://localhost:5000/api/appointments', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setAppointments(res.data.data);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchAppointments();
-    }, []);
+        if (user) {
+            fetchAppointments();
+            // Auto-refresh every 30 seconds
+            const interval = setInterval(fetchAppointments, 30000);
+            return () => clearInterval(interval);
+        }
+    }, [user]);
 
-    const filteredAppointments = appointments.filter(apt => {
-        const matchesSearch =
-            apt.doctor?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            apt.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            apt.reason?.toLowerCase().includes(searchTerm.toLowerCase());
+    // Advanced filtering logic
+    const getFilteredAppointments = () => {
+        let filtered = appointments;
 
-        const matchesStatus = statusFilter === 'all' || apt.status === statusFilter;
-
-        // Date range filtering logic (simple implementation)
-        let matchesDate = true;
-        if (dateRange !== 'all') {
-            const aptDate = new Date(apt.date);
-            const today = new Date();
-            if (dateRange === 'last7days') {
-                const sevenDaysAgo = new Date();
-                sevenDaysAgo.setDate(today.getDate() - 7);
-                matchesDate = aptDate >= sevenDaysAgo;
-            } else if (dateRange === 'last30days') {
-                const thirtyDaysAgo = new Date();
-                thirtyDaysAgo.setDate(today.getDate() - 30);
-                matchesDate = aptDate >= thirtyDaysAgo;
-            }
+        // Search filter
+        if (searchTerm) {
+            filtered = filtered.filter((apt) =>
+                apt.doctor?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                apt.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                apt.reason?.toLowerCase().includes(searchTerm.toLowerCase())
+            );
         }
 
-        return matchesSearch && matchesStatus && matchesDate;
-    });
+        // Status filter
+        if (statusFilter !== "all") {
+            filtered = filtered.filter((apt) => apt.status === statusFilter);
+        }
+
+        // Date range filter
+        if (dateRange.from) {
+            filtered = filtered.filter((apt) =>
+                new Date(apt.date) >= new Date(dateRange.from)
+            );
+        }
+        if (dateRange.to) {
+            filtered = filtered.filter((apt) =>
+                new Date(apt.date) <= new Date(dateRange.to)
+            );
+        }
+
+        // Sorting
+        const sorted = [...filtered];
+        switch (sortBy) {
+            case "date-asc":
+                sorted.sort((a, b) => new Date(a.date) - new Date(b.date));
+                break;
+            case "date-desc":
+                sorted.sort((a, b) => new Date(b.date) - new Date(a.date));
+                break;
+            case "amount-asc":
+                sorted.sort((a, b) => (a.amount || 0) - (b.amount || 0));
+                break;
+            case "amount-desc":
+                sorted.sort((a, b) => (b.amount || 0) - (a.amount || 0));
+                break;
+            default:
+                break;
+        }
+
+        return sorted;
+    };
+
+    const filteredAppointments = getFilteredAppointments();
+
+    // Pagination
+    const startIndex = (page - 1) * itemsPerPage;
+    const paginatedAppointments = filteredAppointments.slice(startIndex, startIndex + itemsPerPage);
+    const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
+
+    const totalSpent = appointments
+        .filter((a) => a.paymentStatus === "paid")
+        .reduce((sum, a) => sum + (a.amount || 0), 0);
 
     const stats = [
-        { label: 'Total Visits', value: appointments.length, icon: Activity, color: 'text-primary-600', bg: 'bg-primary-50' },
-        { label: 'Completed', value: appointments.filter(a => a.status === 'completed').length, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-        { label: 'Cancelled', value: appointments.filter(a => a.status === 'cancelled').length, icon: XCircle, color: 'text-rose-600', bg: 'bg-rose-50' },
-        { label: 'Doctors Met', value: [...new Set(appointments.map(a => a.doctor?._id))].length, icon: User, color: 'text-blue-600', bg: 'bg-blue-50' },
+        {
+            label: "Total Visits",
+            value: appointments.length,
+            icon: Calendar,
+            color: "text-emerald-600",
+            bg: "bg-emerald-50",
+        },
+        {
+            label: "Completed",
+            value: appointments.filter((a) => a.status === "completed").length,
+            icon: CheckCircle2,
+            color: "text-blue-600",
+            bg: "bg-blue-50",
+        },
+        {
+            label: "Total Spent",
+            value: `₹${totalSpent.toLocaleString("en-IN")}`,
+            icon: ShoppingCart,
+            color: "text-violet-600",
+            bg: "bg-violet-50",
+        },
+        {
+            label: "Doctors Met",
+            value: [...new Set(appointments.map((a) => a.doctor?._id))].length,
+            icon: User,
+            color: "text-amber-600",
+            bg: "bg-amber-50",
+        },
     ];
 
     const exportToCSV = () => {
-        const headers = ['Doctor', 'Specialty', 'Date', 'Time', 'Status', 'Reason'];
-        const data = filteredAppointments.map(apt => [
-            apt.doctor?.name || 'N/A',
-            apt.doctor?.specialization || apt.department || 'N/A',
+        const headers = ["Doctor", "Specialty", "Date", "Time", "Status", "Amount", "Reason"];
+        const data = filteredAppointments.map((apt) => [
+            apt.doctor?.name || "N/A",
+            apt.department || apt.doctor?.specialization || "N/A",
             new Date(apt.date).toLocaleDateString(),
             apt.time,
             apt.status,
-            apt.reason
+            apt.amount || "N/A",
+            apt.reason,
         ]);
 
-        const csvContent = [headers, ...data].map(e => e.join(",")).join("\n");
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const csvContent = [headers, ...data].map((e) => e.join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `medicare_history_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
+        link.href = url;
+        link.download = `medical_history_${new Date().toISOString().split("T")[0]}.csv`;
         link.click();
-        document.body.removeChild(link);
     };
 
     return (
         <DashboardLayout>
-            <div className="max-w-7xl mx-auto">
-                {/* Page Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-                    <div>
-                        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Medical History</h1>
-                        <p className="text-slate-500 font-medium">View and manage your past consultations and medical records.</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={exportToCSV}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-bold shadow-sm hover:border-primary-600 hover:text-primary-600 transition-all group"
-                        >
-                            <Download size={18} className="group-hover:-translate-y-0.5 transition-transform" />
-                            Export CSV
-                        </button>
-                        <button
-                            onClick={() => navigate('/patient/book')}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-bold shadow-md shadow-primary-200 hover:bg-primary-700 transition-all"
-                        >
-                            New Appointment
-                        </button>
-                    </div>
-                </div>
-
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                    {stats.map((stat, idx) => (
-                        <motion.div
-                            key={idx}
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: idx * 0.1 }}
-                            className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all group"
-                        >
-                            <div className="flex items-center justify-between mb-4">
-                                <div className={`h-12 w-12 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center group-hover:rotate-6 transition-transform`}>
-                                    <stat.icon size={24} />
+            <div className="font-sans space-y-6 pb-8">
+                {/* Header */}
+                <motion.div
+                    initial={{ opacity: 0, y: -16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
+                >
+                    <div className="relative px-8 py-6">
+                        <div className="absolute inset-0 bg-gradient-to-r from-white via-emerald-50/30 to-emerald-50/60 pointer-events-none"></div>
+                        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                            <div>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-0.5 rounded-full">
+                                        Medical History
+                                    </span>
                                 </div>
-                                <div className="h-8 w-8 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 group-hover:text-primary-400 transition-colors">
-                                    <ArrowUpRight size={16} />
-                                </div>
+                                <h1 className="text-xl font-bold text-slate-800 tracking-tight">Your Consultations</h1>
+                                <p className="text-sm text-slate-500 font-medium mt-0.5">
+                                    View all your past appointments, payments, and medical visits
+                                </p>
                             </div>
-                            <p className="text-slate-400 text-xs font-bold capitalize mb-1">{stat.label}</p>
-                            <h3 className="text-2xl font-bold text-slate-800 tracking-tight">{stat.value}</h3>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={fetchAppointments}
+                                    className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 text-slate-600 rounded-xl font-bold text-sm border border-slate-200 hover:bg-slate-100 hover:border-emerald-200 hover:text-emerald-600 transition-all"
+                                >
+                                    <RefreshCw size={15} /> Refresh
+                                </button>
+                                <button
+                                    onClick={exportToCSV}
+                                    className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 text-slate-600 rounded-xl font-bold text-sm border border-slate-200 hover:bg-slate-100 hover:border-emerald-200 hover:text-emerald-600 transition-all"
+                                >
+                                    <Download size={15} /> Export
+                                </button>
+                                <button
+                                    onClick={() => navigate("/patient/book")}
+                                    className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-sm shadow-emerald-200 hover:bg-emerald-700 transition-all"
+                                >
+                                    <Calendar size={15} /> New Appointment
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
+
+                {/* Stats Row */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {stats.map((stat, i) => (
+                        <motion.div
+                            key={i}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.07 }}
+                            className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 hover:shadow-md transition-all"
+                        >
+                            <div className={`h-10 w-10 ${stat.bg} ${stat.color} rounded-xl flex items-center justify-center mb-3`}>
+                                <stat.icon size={18} />
+                            </div>
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">{stat.label}</p>
+                            <p className="text-xl font-black text-slate-800">{stat.value}</p>
                         </motion.div>
                     ))}
                 </div>
 
-                {/* Filters Section */}
-                <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm mb-8">
-                    <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-                        {/* SaaS Command Bar */}
-                        <div className="flex-1 relative group">
-                            <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
-                                <Search className="text-slate-400 group-focus-within:text-primary-600 transition-all duration-300" size={20} />
-                            </div>
+                {/* Search & Filters */}
+                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3">
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="flex-1 relative">
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
                             <input
                                 type="text"
-                                placeholder="Search your medical history..."
-                                className="w-full pl-14 pr-32 py-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-primary-600/10 focus:ring-4 focus:ring-primary-600/5 transition-all font-medium text-slate-800 outline-none placeholder:text-slate-300"
+                                placeholder="Search doctor, department, reason..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition-all"
                             />
-                            <div className="absolute inset-y-2 right-2 flex items-center gap-2">
-                                <AnimatePresence>
-                                    {searchTerm && (
-                                        <motion.button
-                                            initial={{ opacity: 0, scale: 0.8 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            exit={{ opacity: 0, scale: 0.8 }}
-                                            onClick={() => setSearchTerm('')}
-                                            className="p-2 text-slate-300 hover:text-rose-500 transition-colors"
-                                        >
-                                            <AlertCircle size={16} className="rotate-45" />
-                                        </motion.button>
-                                    )}
-                                </AnimatePresence>
-                                <div className="hidden sm:flex items-center gap-1 px-2 py-1.5 bg-white rounded-xl border border-slate-100 shadow-sm">
-                                    <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">⌘K</span>
-                                </div>
-                            </div>
                         </div>
-
-                        {/* Dropdowns */}
-                        <div className="flex flex-wrap items-center gap-4">
-                            <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-2xl">
-                                <Filter size={16} className="text-slate-400" />
-                                <select
-                                    className="bg-transparent border-none text-xs font-bold text-slate-600 focus:ring-0 outline-none cursor-pointer"
-                                    value={statusFilter}
-                                    onChange={(e) => setStatusFilter(e.target.value)}
-                                >
-                                    <option value="all">All Status</option>
-                                    <option value="completed">Completed</option>
-                                    <option value="confirmed">Confirmed</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="cancelled">Cancelled</option>
-                                </select>
-                            </div>
-
-                            <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-2xl">
-                                <Calendar size={16} className="text-slate-400" />
-                                <select
-                                    className="bg-transparent border-none text-xs font-bold text-slate-600 focus:ring-0 outline-none cursor-pointer"
-                                    value={dateRange}
-                                    onChange={(e) => setDateRange(e.target.value)}
-                                >
-                                    <option value="all">All Time</option>
-                                    <option value="last7days">Last 7 Days</option>
-                                    <option value="last30days">Last 30 Days</option>
-                                </select>
-                            </div>
+                        <div className="flex items-center gap-2 px-3 py-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                            <Filter size={14} className="text-slate-400" />
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                                className="bg-transparent border-none outline-none text-xs font-bold text-slate-600 cursor-pointer"
+                            >
+                                <option value="all">All Status</option>
+                                <option value="completed">Completed</option>
+                                <option value="confirmed">Confirmed</option>
+                                <option value="pending">Pending</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
                         </div>
+                        <button
+                            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                            className="px-4 py-2.5 bg-emerald-50 text-emerald-600 rounded-xl font-bold text-sm border border-emerald-200 hover:bg-emerald-100 transition-all flex items-center gap-2"
+                        >
+                            <ChevronDown size={14} style={{ transform: showAdvancedFilters ? "rotate(180deg)" : "rotate(0deg)" }} />
+                            Filters
+                        </button>
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="px-4 py-2.5 bg-slate-50 text-slate-600 rounded-xl font-bold text-sm border border-slate-200 outline-none cursor-pointer"
+                        >
+                            <option value="date-desc">Newest First</option>
+                            <option value="date-asc">Oldest First</option>
+                            <option value="amount-desc">Highest Amount</option>
+                            <option value="amount-asc">Lowest Amount</option>
+                        </select>
                     </div>
+
+                    {/* Advanced Filters */}
+                    {showAdvancedFilters && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="pt-4 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-3"
+                        >
+                            <div>
+                                <label className="text-xs font-bold text-slate-600 block mb-1">From Date</label>
+                                <input
+                                    type="date"
+                                    value={dateRange.from}
+                                    onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500/20"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-600 block mb-1">To Date</label>
+                                <input
+                                    type="date"
+                                    value={dateRange.to}
+                                    onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500/20"
+                                />
+                            </div>
+                            <button
+                                onClick={() => setDateRange({ from: "", to: "" })}
+                                className="sm:col-span-2 mt-6 px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200 transition-all"
+                            >
+                                Clear Filters
+                            </button>
+                        </motion.div>
+                    )}
                 </div>
 
                 {/* Appointments List */}
-                <div className="space-y-4">
+                <div className="space-y-3">
+                    {error && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3"
+                        >
+                            <AlertCircle className="text-red-600" size={18} />
+                            <span className="text-sm font-medium text-red-600">{error}</span>
+                            <button
+                                onClick={fetchAppointments}
+                                className="ml-auto px-3 py-1 bg-red-100 hover:bg-red-200 text-red-600 rounded text-xs font-bold transition-all"
+                            >
+                                Retry
+                            </button>
+                        </motion.div>
+                    )}
+
                     {loading ? (
-                        [1, 2, 3, 4].map(i => (
-                            <div key={i} className="h-32 bg-white rounded-[2.5rem] animate-pulse shadow-sm border border-slate-50"></div>
-                        ))
-                    ) : filteredAppointments.length > 0 ? (
-                        <AnimatePresence>
-                            {filteredAppointments.map((apt, idx) => (
-                                <motion.div
-                                    key={apt._id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: idx * 0.05 }}
-                                    className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:border-primary-100 transition-all group flex flex-col md:flex-row md:items-center justify-between gap-6"
-                                >
-                                    <div className="flex items-start md:items-center gap-5">
-                                        {/* Doctor Avatar */}
-                                        <div className="relative shrink-0">
-                                            <div className="h-16 w-16 rounded-3xl overflow-hidden border border-slate-100 shadow-inner group-hover:scale-110 transition-transform duration-500 bg-slate-50">
+                        <div className="text-center py-12">
+                            <div className="inline-block">
+                                <div className="h-12 w-12 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin"></div>
+                            </div>
+                            <p className="text-sm text-slate-500 font-medium mt-3">Loading your history...</p>
+                        </div>
+                    ) : paginatedAppointments.length > 0 ? (
+                        <>
+                            <AnimatePresence>
+                                {paginatedAppointments.map((apt, idx) => (
+                                    <motion.div
+                                        key={apt._id}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: idx * 0.05 }}
+                                        onClick={() => {
+                                            setSelectedAppointment(apt);
+                                            setShowDetailModal(true);
+                                        }}
+                                        className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 hover:shadow-md hover:border-emerald-100 transition-all cursor-pointer"
+                                    >
+                                        <div className="flex items-start gap-4">
+                                            {/* Doctor Avatar */}
+                                            <div className="h-12 w-12 rounded-xl overflow-hidden flex-shrink-0 border-2 border-emerald-100">
                                                 <img
-                                                    src={apt.doctor?.profileImage && apt.doctor.profileImage !== 'default-avatar.png'
-                                                        ? (apt.doctor.profileImage.startsWith('http') ? apt.doctor.profileImage : `http://localhost:5000/${apt.doctor.profileImage}`)
-                                                        : `https://ui-avatars.com/api/?name=${encodeURIComponent(apt.doctor?.name || 'Doctor')}&background=10b981&color=fff&bold=true`}
+                                                    src={
+                                                        apt.doctor?.profileImage &&
+                                                        apt.doctor.profileImage !== "default-avatar.png"
+                                                            ? apt.doctor.profileImage.startsWith("http")
+                                                                ? apt.doctor.profileImage
+                                                                : `http://localhost:5000/${apt.doctor.profileImage}`
+                                                            : `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                                                  apt.doctor?.name || "Doctor"
+                                                              )}&background=10b981&color=fff&bold=true`
+                                                    }
                                                     alt={apt.doctor?.name}
                                                     className="h-full w-full object-cover"
                                                     onError={(e) => {
                                                         e.target.onerror = null;
-                                                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(apt.doctor?.name || 'Doctor')}&background=10b981&color=fff&bold=true`;
+                                                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                                            apt.doctor?.name || "Doctor"
+                                                        )}&background=10b981&color=fff&bold=true`;
                                                     }}
                                                 />
                                             </div>
-                                            <div className="absolute -bottom-1 -right-1 h-6 w-6 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-50">
-                                                <Activity size={12} className="text-primary-600" />
-                                            </div>
-                                        </div>
 
-                                        {/* Info */}
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h4 className="font-bold text-slate-800 text-lg tracking-tight group-hover:text-primary-600 transition-colors capitalize">{apt.doctor?.name}</h4>
-                                                <div className="h-1 w-1 bg-slate-300 rounded-full"></div>
-                                                <span className="text-[10px] font-bold text-primary-500 capitalize tracking-wide">{apt.department || apt.doctor?.specialization}</span>
-                                            </div>
-                                            <p className="text-sm font-semibold text-slate-500 mb-3 line-clamp-1 italic pr-4">
-                                                "{apt.reason}"
-                                            </p>
-                                            <div className="flex flex-wrap items-center gap-4">
-                                                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 bg-slate-50 px-3 py-1.5 rounded-xl">
-                                                    <Calendar size={14} className="text-primary-400" />
-                                                    {new Date(apt.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                            {/* Info */}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <h4 className="font-bold text-slate-800 text-sm">{apt.doctor?.name}</h4>
+                                                    <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
+                                                        {apt.department || apt.doctor?.specialization}
+                                                    </span>
                                                 </div>
-                                                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 bg-slate-50 px-3 py-1.5 rounded-xl">
-                                                    <Clock size={14} className="text-primary-400" />
-                                                    {apt.time}
+                                                <p className="text-[11px] text-slate-500 italic line-clamp-1 mb-2">"{apt.reason}"</p>
+                                                <div className="flex items-center gap-3 flex-wrap">
+                                                    <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-600">
+                                                        <Calendar size={12} className="text-slate-400" />
+                                                        {new Date(apt.date).toLocaleDateString("en-GB", {
+                                                            day: "numeric",
+                                                            month: "short",
+                                                            year: "numeric",
+                                                        })}
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-600">
+                                                        <Clock size={12} className="text-slate-400" />
+                                                        {apt.time}
+                                                    </div>
+                                                    {apt.amount && (
+                                                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">
+                                                            ₹{apt.amount}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
-                                        </div>
-                                    </div>
 
-                                    {/* Actions & Status */}
-                                    <div className="flex items-center justify-between md:justify-end gap-10 pl-2 md:pl-0 border-t md:border-t-0 pt-4 md:pt-0 mt-2 md:mt-0 border-slate-50">
-                                        <div className="text-right">
-                                            <StatusBadge status={apt.status} />
-                                            <p className="text-[10px] font-bold text-slate-400 mt-2 capitalize">ID: #{apt._id?.slice(-8)}</p>
-                                        </div>
-
-                                        <div className="flex items-center gap-2">
-                                            <button className="h-12 w-12 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-primary-50 hover:text-primary-600 transition-all shadow-sm group-hover:shadow-md">
-                                                <FileText size={20} />
-                                            </button>
-                                            <div className="h-12 w-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center hover:bg-slate-800 transition-all shadow-lg shadow-slate-200 cursor-pointer">
-                                                <ChevronRight size={20} />
+                                            {/* Status */}
+                                            <div className="flex items-center gap-2 flex-shrink-0">
+                                                <StatusBadge status={getAppointmentStatus(apt)} />
                                             </div>
                                         </div>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+
+                            {/* Pagination */}
+                            {totalPages > 1 && (
+                                <div className="flex items-center justify-center gap-2 mt-8">
+                                    <button
+                                        onClick={() => setPage(Math.max(1, page - 1))}
+                                        disabled={page === 1}
+                                        className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                    >
+                                        Previous
+                                    </button>
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                                        <button
+                                            key={p}
+                                            onClick={() => setPage(p)}
+                                            className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${
+                                                page === p
+                                                    ? "bg-emerald-600 text-white"
+                                                    : "border border-slate-200 text-slate-600 hover:bg-slate-50"
+                                            }`}
+                                        >
+                                            {p}
+                                        </button>
+                                    ))}
+                                    <button
+                                        onClick={() => setPage(Math.min(totalPages, page + 1))}
+                                        disabled={page === totalPages}
+                                        className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            )}
+                        </>
                     ) : (
-                        <div className="bg-white p-16 rounded-[3rem] border-2 border-dashed border-slate-100 text-center shadow-sm">
-                            <div className="h-24 w-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-8">
-                                <History className="text-slate-200" size={48} />
+                        <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm p-12 text-center">
+                            <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <History size={28} className="text-emerald-600" />
                             </div>
-                            <h4 className="text-2xl font-bold text-slate-800 mb-2">No Records Found</h4>
-                            <p className="text-slate-400 font-medium mb-10 max-w-sm mx-auto">
-                                We couldn't find any medical history matching your current filters. Try adjusting your search criteria.
+                            <p className="text-sm font-bold text-slate-600 mb-1">No appointments found</p>
+                            <p className="text-xs text-slate-500 font-medium mb-6">
+                                Try adjusting your filters or book your first appointment
                             </p>
                             <button
-                                onClick={() => {
-                                    setSearchTerm('');
-                                    setStatusFilter('all');
-                                    setDateRange('all');
-                                }}
-                                className="px-10 py-3.5 bg-slate-900 text-white rounded-2xl text-xs font-bold shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all"
+                                onClick={() => navigate("/patient/book")}
+                                className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-sm shadow-emerald-200 hover:bg-emerald-700 transition-all"
                             >
-                                Reset All Filters
+                                Book Appointment
                             </button>
                         </div>
                     )}
                 </div>
 
-                {/* Patient Records Sidebar Area (Mockup of what else could be here) */}
-                {filteredAppointments.length > 0 && (
-                    <div className="mt-16 grid lg:grid-cols-3 gap-8 pb-10">
-                        <div className="bg-emerald-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-emerald-100 flex flex-col justify-between">
-                            <div>
-                                <CheckCircle2 className="mb-6 opacity-40" size={32} />
-                                <h3 className="text-2xl font-bold mb-3">Health Analytics</h3>
-                                <p className="text-emerald-100 text-sm font-medium leading-relaxed mb-8">
-                                    Your consistency in medical checkups has improved by 40% compared to last year. Maintain this pace for better wellness.
-                                </p>
+                {/* Insights Cards */}
+                {filteredAppointments.length > 0 && (() => {
+                    // Calculate most visited doctor
+                    const doctorCounts = {};
+                    appointments.forEach((apt) => {
+                        if (apt.doctor?._id) {
+                            doctorCounts[apt.doctor._id] = (doctorCounts[apt.doctor._id] || 0) + 1;
+                        }
+                    });
+                    const mostVisitedDoctorId = Object.entries(doctorCounts).sort(([, a], [, b]) => b - a)[0]?.[0];
+                    const mostVisitedDoctor = appointments.find((a) => a.doctor?._id === mostVisitedDoctorId);
+                    const mostVisitedCount = doctorCounts[mostVisitedDoctorId] || 0;
+
+                    return (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
+                        {/* Top Doctor */}
+                        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-5 text-white shadow-lg shadow-emerald-200/50">
+                            <div className="flex items-start justify-between mb-3">
+                                <div className="h-10 w-10 bg-white/20 rounded-xl flex items-center justify-center">
+                                    <Heart size={18} />
+                                </div>
                             </div>
-                            <button className="w-full py-4 bg-white/20 backdrop-blur-md rounded-2xl font-bold text-sm hover:bg-white/30 transition-all">
-                                View Full Analytics
+                            <p className="text-[11px] font-bold opacity-75 uppercase tracking-wider mb-1">Most Visited</p>
+                            <p className="text-sm font-bold mb-3">{mostVisitedDoctor?.doctor?.name || "Your Doctor"}</p>
+                            <p className="text-[10px] opacity-80 font-medium">{mostVisitedCount} visits</p>
+                        </div>
+
+                        {/* Total Spent */}
+                        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                            <div className="h-10 w-10 bg-violet-50 rounded-xl flex items-center justify-center mb-3">
+                                <ShoppingCart size={18} className="text-violet-600" />
+                            </div>
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Total Spent</p>
+                            <p className="text-xl font-black text-slate-800">₹{totalSpent.toLocaleString("en-IN")}</p>
+                            <p className="text-[10px] text-slate-400 font-medium mt-2">on {appointments.length} consultations</p>
+                        </div>
+
+                        {/* Quick Actions */}
+                        <div className="bg-slate-900 rounded-2xl p-5 text-white shadow-lg shadow-slate-900/20">
+                            <div className="h-10 w-10 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-3">
+                                <TrendingUp size={18} className="text-emerald-400" />
+                            </div>
+                            <p className="text-[11px] font-bold opacity-75 uppercase tracking-wider mb-3">Health Status</p>
+                            <button
+                                onClick={() => navigate("/patient/book")}
+                                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition-all"
+                            >
+                                Book Next Appointment
                             </button>
                         </div>
-
-                        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between">
-                            <div>
-                                <Activity className="mb-6 text-primary-600" size={32} />
-                                <h3 className="text-2xl font-bold text-slate-800 mb-3">Medical Documents</h3>
-                                <p className="text-slate-500 text-sm font-medium leading-relaxed mb-6">
-                                    Access your 14 digital prescriptions and lab results stored securely in your vault.
-                                </p>
-                            </div>
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                                    <span className="text-xs font-bold text-slate-600">Prescriptions</span>
-                                    <span className="text-xs font-black text-primary-600">14 Files</span>
-                                </div>
-                                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                                    <span className="text-xs font-bold text-slate-600">Lab Reports</span>
-                                    <span className="text-xs font-black text-primary-600">8 Files</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-xl shadow-slate-200 relative overflow-hidden">
-                            <div className="relative z-10 h-full flex flex-col justify-between">
-                                <div>
-                                    <User className="mb-6 text-primary-400" size={32} />
-                                    <h3 className="text-2xl font-bold mb-3">Top Specialist</h3>
-                                    <p className="text-slate-400 text-sm font-medium leading-relaxed mb-8">
-                                        You frequently visit {filteredAppointments[0]?.doctor?.name || 'your specialist'} ({filteredAppointments[0]?.department || 'General Medicine'}) for your wellness routine.
-                                    </p>
-                                </div>
-                                <button className="w-full py-4 bg-primary-600 rounded-2xl font-bold text-sm hover:bg-primary-700 transition-all shadow-lg shadow-primary-900/40">
-                                    Quick Consult
-                                </button>
-                            </div>
-                            <div className="absolute top-0 right-0 h-40 w-40 bg-primary-600/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
-                        </div>
                     </div>
-                )}
+                    );
+                })()}
+
+                {/* Appointment Detail Modal */}
+                <AnimatePresence>
+                    {showDetailModal && selectedAppointment && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+                        >
+                            <motion.div
+                                initial={{ scale: 0.95, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.95, opacity: 0 }}
+                                className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                            >
+                                {/* Header */}
+                                <div className="sticky top-0 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white p-6 flex items-center justify-between">
+                                    <h2 className="text-xl font-bold">Appointment Details</h2>
+                                    <button
+                                        onClick={() => setShowDetailModal(false)}
+                                        className="p-2 hover:bg-white/20 rounded-lg transition-all"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                </div>
+
+                                <div className="p-6 space-y-6">
+                                    {/* Doctor Info */}
+                                    <div className="flex items-start gap-4 pb-6 border-b border-slate-100">
+                                        <img
+                                            src={
+                                                selectedAppointment.doctor?.profileImage?.startsWith("http")
+                                                    ? selectedAppointment.doctor.profileImage
+                                                    : `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                                          selectedAppointment.doctor?.name || "Doctor"
+                                                      )}&background=10b981&color=fff&bold=true`
+                                            }
+                                            alt={selectedAppointment.doctor?.name}
+                                            className="h-20 w-20 rounded-xl object-cover"
+                                        />
+                                        <div className="flex-1">
+                                            <h3 className="text-lg font-bold text-slate-800 mb-1">{selectedAppointment.doctor?.name}</h3>
+                                            <p className="text-sm text-emerald-600 font-bold mb-2">{selectedAppointment.department || selectedAppointment.doctor?.specialization}</p>
+                                            {selectedAppointment.doctor?.phone && (
+                                                <p className="text-sm text-slate-600 flex items-center gap-2">
+                                                    <Phone size={14} />
+                                                    {selectedAppointment.doctor.phone}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <StatusBadge status={getAppointmentStatus(selectedAppointment)} />
+                                    </div>
+
+                                    {/* Appointment Details */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-500 uppercase mb-1">Date</p>
+                                            <p className="text-sm font-bold text-slate-800">
+                                                {new Date(selectedAppointment.date).toLocaleDateString("en-GB", {
+                                                    weekday: "long",
+                                                    day: "numeric",
+                                                    month: "long",
+                                                    year: "numeric",
+                                                })}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-500 uppercase mb-1">Time</p>
+                                            <p className="text-sm font-bold text-slate-800">{selectedAppointment.time}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-500 uppercase mb-1">Reason</p>
+                                            <p className="text-sm font-bold text-slate-800">{selectedAppointment.reason}</p>
+                                        </div>
+                                        {selectedAppointment.amount && (
+                                            <div>
+                                                <p className="text-xs font-bold text-slate-500 uppercase mb-1">Amount</p>
+                                                <p className="text-sm font-bold text-emerald-600">₹{selectedAppointment.amount}</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Payment Status */}
+                                    {selectedAppointment.paymentStatus && (
+                                        <div className="bg-slate-50 rounded-lg p-4">
+                                            <p className="text-xs font-bold text-slate-500 uppercase mb-2">Payment Status</p>
+                                            <div className="flex items-center gap-2">
+                                                <div
+                                                    className={`h-2 w-2 rounded-full ${
+                                                        selectedAppointment.paymentStatus === "paid"
+                                                            ? "bg-emerald-600"
+                                                            : "bg-amber-600"
+                                                    }`}
+                                                />
+                                                <span className="text-sm font-bold capitalize text-slate-700">{selectedAppointment.paymentStatus}</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Notes */}
+                                    {selectedAppointment.notes && (
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-500 uppercase mb-2">Notes</p>
+                                            <p className="text-sm text-slate-700 bg-slate-50 p-3 rounded-lg">{selectedAppointment.notes}</p>
+                                        </div>
+                                    )}
+
+                                    {/* Action Buttons */}
+                                    <div className="flex gap-3 pt-4 border-t border-slate-100">
+                                        <button
+                                            onClick={() => {
+                                                exportToCSV();
+                                                setShowDetailModal(false);
+                                            }}
+                                            className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-600 rounded-lg font-bold text-sm hover:bg-slate-200 transition-all"
+                                        >
+                                            Export
+                                        </button>
+                                        <button
+                                            onClick={() => setShowDetailModal(false)}
+                                            className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-lg font-bold text-sm hover:bg-emerald-700 transition-all"
+                                        >
+                                            Close
+                                        </button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </DashboardLayout>
     );
@@ -387,25 +698,38 @@ const MyHistory = () => {
 
 const StatusBadge = ({ status }) => {
     const styles = {
-        pending: 'bg-amber-50 text-amber-600 border-amber-100',
-        confirmed: 'bg-blue-50 text-blue-600 border-blue-100',
-        completed: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-        cancelled: 'bg-rose-50 text-rose-600 border-rose-100',
+        pending: "bg-amber-50 text-amber-600 border-amber-100",
+        confirmed: "bg-blue-50 text-blue-600 border-blue-100",
+        completed: "bg-emerald-50 text-emerald-600 border-emerald-100",
+        cancelled: "bg-rose-50 text-rose-600 border-rose-100",
+        expired: "bg-slate-50 text-slate-600 border-slate-100",
     };
 
     const icons = {
-        pending: Clock3,
+        pending: AlertCircle,
         confirmed: CheckCircle2,
         completed: CheckCircle2,
-        cancelled: XCircle,
+        cancelled: AlertCircle,
+        expired: AlertCircle,
     };
 
-    const Icon = icons[status] || Clock3;
+    const Icon = icons[status] || AlertCircle;
+
+    // Map status to display text
+    const displayText = {
+        expired: 'Expired',
+        pending: 'Pending',
+        confirmed: 'Confirmed',
+        completed: 'Completed',
+        cancelled: 'Cancelled'
+    };
 
     return (
-        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold capitalize border ${styles[status]}`}>
-            <Icon size={14} />
-            {status}
+        <span
+            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold capitalize border ${styles[status]}`}
+        >
+            <Icon size={12} />
+            {displayText[status] || status}
         </span>
     );
 };

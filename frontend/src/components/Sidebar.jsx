@@ -1,152 +1,263 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 import {
-    LayoutDashboard,
-    Calendar,
-    User,
-    FileText,
-    Bell,
-    Settings,
-    LogOut,
-    ChevronRight,
-    ArrowLeft,
-    Clock,
-    Users,
-    DollarSign,
-    Stethoscope,
-    Shield
-} from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { motion } from 'framer-motion';
+    LayoutDashboard, Calendar, User, FileText, Bell,
+    Settings, LogOut, Clock, Users, DollarSign, Stethoscope,
+    Shield, History, ChevronRight, ArrowLeft, HeartPulse,
+    UserPlus, Heart, Activity, Building2, Send
+} from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import { motion } from "framer-motion";
+import axios from "axios";
 
 const Sidebar = ({ role }) => {
     const location = useLocation();
     const { logout, user } = useAuth();
+    const [unreadCount, setUnreadCount] = useState(0);
+    const isAdmin = role === 'admin';
+
+    useEffect(() => {
+        if (!user || isAdmin) return;
+        const fetchUnread = async () => {
+            try {
+                const token = localStorage.getItem("token");
+                const { data } = await axios.get("http://localhost:5000/api/notifications/unread-count", {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (data.success) setUnreadCount(data.count);
+            } catch (_) { }
+        };
+        fetchUnread();
+        const interval = setInterval(fetchUnread, 30000);
+        return () => clearInterval(interval);
+    }, [user, isAdmin]);
 
     const links = {
         patient: [
-            { name: 'Dashboard', path: '/patient/dashboard', icon: LayoutDashboard },
-            { name: 'Book Appointment', path: '/patient/book', icon: Calendar },
-            { name: 'My History', path: '/patient/history', icon: Clock },
-            { name: 'Medical Records', path: '/patient/records', icon: Shield },
-            { name: 'Notifications', path: '/patient/notifications', icon: Bell },
-            { name: 'Profile', path: '/patient/profile', icon: User },
+            { name: "Dashboard", path: "/patient/dashboard", icon: LayoutDashboard },
+            { name: "Book Appointment", path: "/patient/book", icon: Calendar },
+            { name: "My History", path: "/patient/history", icon: History },
+            { name: "Medical Records", path: "/patient/records", icon: Shield },
+            { name: "Notifications", path: "/patient/notifications", icon: Bell },
+            { name: "Profile", path: "/patient/profile", icon: User },
         ],
         doctor: [
-            { name: 'Dashboard', path: '/doctor/dashboard', icon: LayoutDashboard },
-            { name: 'Appointments', path: '/doctor/appointments', icon: Calendar },
-            { name: 'Patient History', path: '/doctor/history', icon: FileText },
-            { name: 'Availability', path: '/doctor/availability', icon: Clock },
-            { name: 'Profile', path: '/doctor/profile', icon: User },
+            { name: "Dashboard", path: "/doctor/dashboard", icon: LayoutDashboard },
+            { name: "Appointments", path: "/doctor/appointments", icon: Calendar },
+            { name: "Patient History", path: "/doctor/history", icon: FileText },
+            { name: "Availability", path: "/doctor/availability", icon: Clock },
+            { name: "Profile", path: "/doctor/profile", icon: User },
         ],
         admin: [
-            { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
-            { name: 'Doctors', path: '/admin/doctors', icon: User },
-            { name: 'Patients', path: '/admin/patients', icon: Users },
-            { name: 'Revenue', path: '/admin/revenue', icon: DollarSign },
-            { name: 'Settings', path: '/admin/settings', icon: Settings },
-        ]
+            { name: "Overview", path: "/admin/dashboard", icon: LayoutDashboard, section: null },
+            { name: "Doctors", path: "/admin/doctors", icon: Stethoscope, section: "Management" },
+            { name: "Patients", path: "/admin/patients", icon: Users, section: null },
+            { name: "Appointments", path: "/admin/appointments", icon: Calendar, section: null },
+            { name: "Services", path: "/admin/services", icon: Heart, section: null },
+            { name: "Revenue", path: "/admin/revenue", icon: DollarSign, section: "Analytics" },
+            { name: "Settings", path: "/admin/settings", icon: Settings, section: "System" },
+        ],
     };
 
     const activeLinks = links[role] || [];
+    const roleColor = { patient: "bg-emerald-500", doctor: "bg-blue-500", admin: "bg-emerald-500" }[role] || "bg-slate-500";
+    const roleBadge = { patient: "Patient", doctor: "Doctor", admin: "Administrator" }[role] || "User";
 
-    return (
-        <div className="w-64 h-screen fixed left-0 top-0 bg-white border-r border-slate-100/80 pt-8 pb-10 px-6 flex flex-col z-50">
-            <div className="mb-10 px-2 flex items-center justify-between">
-                <Link to="/" className="flex items-center gap-2.5 group">
-                    <div className="h-8 w-8 bg-gradient-to-br from-primary-500 to-indigo-600 rounded-xl flex items-center justify-center p-0.5 group-hover:rotate-6 transition-transform shadow-lg shadow-primary-200/50">
-                        <div className="h-full w-full bg-white/10 rounded-[10px] flex items-center justify-center backdrop-blur-sm">
-                            <Stethoscope className="h-4 w-4 text-white" />
-                        </div>
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="text-base font-black text-slate-900 leading-none tracking-tighter">MediCare</span>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Health Eco</span>
-                    </div>
-                </Link>
+    // Dark sidebar for admin, light for others
+    const sidebarBg = isAdmin ? '#0e1120' : '#0f1117';
+    const borderColor = isAdmin ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.06)';
+    const activeAccent = isAdmin ? '#10b981' : '#10b981';
+    const activeBg = isAdmin ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.1)';
+    const activeText = isAdmin ? '#6ee7b7' : '#34d399';
+    const logoAccent = isAdmin ? '#10b981' : '#10b981';
 
-                <Link
-                    to="/"
-                    className="flex items-center justify-center w-8 h-8 text-slate-300 hover:text-primary-600 transition-all border border-transparent hover:border-slate-100 rounded-xl hover:bg-slate-50"
-                    title="Back to Home"
-                >
-                    <ArrowLeft size={16} />
-                </Link>
-            </div>
-
-            <div className="flex-1 space-y-1">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-3 mb-4">Main Menu</p>
-                {activeLinks.map((link) => {
-                    const Icon = link.icon;
-                    const isActive = location.pathname === link.path;
-                    return (
-                        <Link
-                            key={link.path}
-                            to={link.path}
-                            className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all relative group ${isActive
-                                ? 'bg-primary-50 text-primary-600 font-bold shadow-sm shadow-primary-100/50'
-                                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                                }`}
+    // Group admin links by section
+    const renderAdminLinks = () => {
+        let lastSection = undefined;
+        return activeLinks.map((link, idx) => {
+            const showSection = link.section !== undefined && link.section !== lastSection;
+            if (link.section !== undefined) lastSection = link.section;
+            const Icon = link.icon;
+            const isActive = location.pathname === link.path;
+            return (
+                <div key={link.path}>
+                    {showSection && link.section && (
+                        <p style={{
+                            color: 'rgba(255,255,255,0.2)', fontSize: 9, fontWeight: 800,
+                            textTransform: 'uppercase', letterSpacing: '0.18em',
+                            padding: '16px 14px 6px', margin: 0
+                        }}>{link.section}</p>
+                    )}
+                    <Link to={link.path}
+                        style={{ textDecoration: 'none', display: 'block', marginBottom: 2 }}>
+                        <div style={{
+                            position: 'relative', display: 'flex', alignItems: 'center', gap: 10,
+                            padding: '10px 12px', borderRadius: 12, transition: 'all 0.15s',
+                            background: isActive ? activeBg : 'transparent',
+                            cursor: 'pointer'
+                        }}
+                            onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+                            onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
                         >
-                            <div className="flex items-center gap-3.5 relative z-10">
-                                <span className={`${isActive ? 'text-primary-600 scale-110' : 'text-slate-400 group-hover:text-slate-600'} transition-all`}><Icon size={18} /></span>
-                                <span className={`text-[15px] tracking-tight ${isActive ? 'font-extrabold' : 'font-semibold'}`}>{link.name}</span>
-                            </div>
+                            {/* Active bar */}
                             {isActive && (
-                                <motion.div
-                                    layoutId="active-pill"
-                                    className="h-6 w-1 bg-primary-600 rounded-full absolute left-0"
+                                <motion.div layoutId={`active-bar-${role}`}
+                                    style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', width: 3, height: 20, background: activeAccent, borderRadius: 4 }}
                                 />
                             )}
-                            {isActive && <ChevronRight size={14} className="opacity-50" />}
-                        </Link>
-                    );
-                })}
+                            {/* Icon */}
+                            <div style={{
+                                height: 32, width: 32, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s',
+                                background: isActive ? `${activeAccent}25` : 'rgba(255,255,255,0.04)',
+                                color: isActive ? activeText : 'rgba(255,255,255,0.35)',
+                            }}>
+                                <Icon size={15} />
+                            </div>
+                            <span style={{
+                                fontSize: 13, fontWeight: isActive ? 700 : 600, flex: 1, letterSpacing: '-0.01em',
+                                color: isActive ? activeText : 'rgba(255,255,255,0.45)',
+                                transition: 'color 0.15s'
+                            }}>
+                                {link.name}
+                            </span>
+                            {isActive && (
+                                <ChevronRight size={12} style={{ color: activeAccent, opacity: 0.7 }} />
+                            )}
+                        </div>
+                    </Link>
+                </div>
+            );
+        });
+    };
+
+    const renderStandardLinks = () => activeLinks.map((link) => {
+        const Icon = link.icon;
+        const isActive = location.pathname === link.path;
+        return (
+            <Link key={link.path} to={link.path}
+                className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group ${isActive ? "bg-emerald-500/10 text-emerald-400" : "text-slate-400 hover:text-white hover:bg-white/[0.05]"}`}>
+                {isActive && (
+                    <motion.div layoutId="active-bar"
+                        className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-emerald-500 rounded-full"
+                    />
+                )}
+                <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${isActive ? "bg-emerald-500/20 text-emerald-400" : "bg-white/[0.04] text-slate-500 group-hover:bg-white/[0.08] group-hover:text-slate-300"}`}>
+                    <Icon size={15} />
+                </div>
+                <span className={`text-[13px] font-semibold flex-1 tracking-tight ${isActive ? "font-bold" : ""}`}>{link.name}</span>
+                {link.name === "Notifications" && unreadCount > 0 && (
+                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-rose-500 text-white min-w-[18px] text-center">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                )}
+                {isActive && <ChevronRight size={13} className="text-emerald-500 opacity-60" />}
+            </Link>
+        );
+    });
+
+    return (
+        <div style={{
+            width: 240, height: '100vh', position: 'fixed', left: 0, top: 0,
+            display: 'flex', flexDirection: 'column', zIndex: 50,
+            background: sidebarBg,
+            borderRight: `1px solid ${borderColor}`
+        }}>
+            {/* Logo */}
+            <div style={{ padding: '20px 16px 16px', borderBottom: `1px solid ${borderColor}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{
+                            height: 36, width: 36, borderRadius: 11, flexShrink: 0,
+                            background: `linear-gradient(135deg, ${logoAccent}, ${isAdmin ? '#4f46e5' : '#059669'})`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: `0 6px 16px ${logoAccent}40`
+                        }}>
+                            {isAdmin ? <Building2 size={17} color="white" /> : <HeartPulse size={17} color="white" />}
+                        </div>
+                        <div>
+                            <p style={{ color: 'white', fontSize: 14, fontWeight: 800, margin: 0, letterSpacing: '-0.3px' }}>
+                                {isAdmin ? 'Admin Portal' : 'CarePulse'}
+                            </p>
+                            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 9, fontWeight: 700, margin: 0, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                                {isAdmin ? 'Hospital Management' : 'Healthcare'}
+                            </p>
+                        </div>
+                    </Link>
+                    <Link to="/" title="Back to Home"
+                        style={{ height: 28, width: 28, borderRadius: 8, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.35)', textDecoration: 'none', flexShrink: 0 }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                    >
+                        <ArrowLeft size={13} />
+                    </Link>
+                </div>
             </div>
 
-            <div className="mt-auto pb-8 border-t border-slate-50 pt-8">
-                <div className="px-2 mb-8">
-                    <div className="flex items-center justify-between mb-3">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Trust Score</span>
-                        <span className="text-[11px] font-black text-emerald-600">70%</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden p-0.5">
-                        <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: '70%' }}
-                            className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.3)]"
-                        ></motion.div>
+            {/* Admin Status Badge */}
+            {isAdmin && (
+                <div style={{ padding: '10px 16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 9 }}>
+                        <div style={{ height: 6, width: 6, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 5px #10b981', flexShrink: 0 }} />
+                        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>System Active</span>
                     </div>
                 </div>
+            )}
 
-                <div className="bg-slate-900 rounded-[.8rem] p-3 flex items-center justify-between group hover:shadow-2xl hover:shadow-slate-900/20 transition-all border border-white/5">
-                    <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-lg overflow-hidden shadow-lg flex-shrink-0 bg-white p-0.5 border border-white/10 group-hover:scale-105 transition-transform">
+            {/* Navigation */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '8px 10px' }}>
+                {!isAdmin && (
+                    <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.18em', padding: '4px 6px 10px', margin: 0 }}>
+                        Main Menu
+                    </p>
+                )}
+                {isAdmin ? renderAdminLinks() : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {renderStandardLinks()}
+                    </div>
+                )}
+            </div>
+
+            {/* Footer – User Card */}
+            <div style={{ padding: '12px 10px', borderTop: `1px solid ${borderColor}` }}>
+                <div style={{
+                    background: 'rgba(255,255,255,0.03)', border: `1px solid ${borderColor}`,
+                    borderRadius: 12, padding: '10px 12px'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        {/* Avatar */}
+                        <div style={{ height: 34, width: 34, borderRadius: 10, overflow: 'hidden', flexShrink: 0, border: `2px solid ${activeAccent}40` }}>
                             <img
-                                src={user?.profileImage && user?.profileImage !== 'default-avatar.png'
-                                    ? (user.profileImage.startsWith('http') ? user.profileImage : `http://localhost:5000/${user.profileImage}`)
-                                    : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=10b981&color=fff&bold=true`}
+                                src={user?.profileImage && user?.profileImage !== "default-avatar.png"
+                                    ? user.profileImage.startsWith("http") ? user.profileImage : `http://localhost:5000/${user.profileImage}`
+                                    : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "Admin")}&background=${isAdmin ? '7c3aed' : '10b981'}&color=fff&bold=true`}
                                 alt={user?.name}
-                                className="h-full w-full object-cover rounded-md"
-                                onError={(e) => {
-                                    e.target.onerror = null;
-                                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=10b981&color=fff&bold=true`;
-                                }}
+                                style={{ height: '100%', width: '100%', objectFit: 'cover' }}
+                                onError={e => { e.target.onerror = null; e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=${isAdmin ? '7c3aed' : '10b981'}&color=fff&bold=true`; }}
                             />
                         </div>
-                        <div className="flex flex-col min-w-0 pr-1">
-                            <span className="text-[10px] font-black text-white leading-none mb-0.5 truncate">{user?.name}</span>
-                            <span className="text-[8px] font-bold text-slate-500 truncate max-w-[100px]">
-                                {user?.email}
+                        {/* Info */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ color: 'white', fontSize: 12, fontWeight: 700, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {user?.name || 'User'}
+                            </p>
+                            <span style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 4,
+                                padding: '1px 7px', borderRadius: 6, fontSize: 9, fontWeight: 800,
+                                textTransform: 'uppercase', letterSpacing: '0.07em', marginTop: 2,
+                                background: isAdmin ? 'rgba(16,185,129,0.25)' : role === 'doctor' ? 'rgba(59,130,246,0.25)' : 'rgba(16,185,129,0.25)',
+                                color: isAdmin ? '#6ee7b7' : role === 'doctor' ? '#93c5fd' : '#6ee7b7'
+                            }}>
+                                {roleBadge}
                             </span>
                         </div>
+                        {/* Logout */}
+                        <button onClick={logout} title="Log Out"
+                            style={{ height: 28, width: 28, borderRadius: 8, background: 'rgba(239,68,68,0.1)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f87171', cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s' }}
+                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.2)'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}>
+                            <LogOut size={12} />
+                        </button>
                     </div>
-                    <button
-                        onClick={logout}
-                        className="h-9 w-9 flex items-center justify-center text-slate-500 hover:text-rose-400 hover:bg-white/5 rounded-xl transition-all active:scale-90"
-                        title="Logout"
-                    >
-                        <LogOut size={16} />
-                    </button>
                 </div>
             </div>
         </div>

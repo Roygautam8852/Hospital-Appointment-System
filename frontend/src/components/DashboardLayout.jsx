@@ -3,16 +3,39 @@ import { useAuth } from '../context/AuthContext';
 
 const DashboardLayout = ({ children }) => {
     const { user } = useAuth();
+    const isAdmin = user?.role === 'admin';
 
     return (
-        <div className="min-h-screen bg-slate-50 flex relative overflow-hidden">
-            {/* Ambient Background Glows */}
-            <div className="fixed top-[-10%] left-[20%] w-[40%] h-[40%] bg-primary-600/5 rounded-full blur-[120px] pointer-events-none"></div>
-            <div className="fixed bottom-[-10%] right-[10%] w-[30%] h-[30%] bg-blue-600/5 rounded-full blur-[100px] pointer-events-none"></div>
+        <div style={{
+            minHeight: '100vh',
+            display: 'flex',
+            background: isAdmin ? '#0c0f1a' : '#f8fafc',
+            position: 'relative',
+            overflow: 'hidden',
+            fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif"
+        }}>
+            {/* Ambient glows */}
+            {isAdmin ? (
+                <>
+                    <div style={{ position: 'fixed', top: '-15%', left: '20%', width: '40%', height: '40%', background: 'radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(80px)', pointerEvents: 'none' }} />
+                    <div style={{ position: 'fixed', bottom: '-10%', right: '10%', width: '35%', height: '35%', background: 'radial-gradient(circle, rgba(16,185,129,0.04) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(80px)', pointerEvents: 'none' }} />
+                </>
+            ) : (
+                <>
+                    <div className="fixed top-[-10%] left-[20%] w-[40%] h-[40%] bg-primary-600/5 rounded-full blur-[120px] pointer-events-none" />
+                    <div className="fixed bottom-[-10%] right-[10%] w-[30%] h-[30%] bg-blue-600/5 rounded-full blur-[100px] pointer-events-none" />
+                </>
+            )}
 
             <Sidebar role={user?.role} />
-            <main className="flex-1 ml-56 pt-20 p-8 relative z-10">
-                <div className="max-w-7xl mx-auto">
+            <main style={{
+                flex: 1,
+                marginLeft: 240,
+                padding: '32px',
+                position: 'relative',
+                zIndex: 10
+            }}>
+                <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
                     {children}
                 </div>
             </main>
