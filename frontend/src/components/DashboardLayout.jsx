@@ -4,21 +4,24 @@ import { useAuth } from '../context/AuthContext';
 const DashboardLayout = ({ children }) => {
     const { user } = useAuth();
     const isAdmin = user?.role === 'admin';
+    const isDoctor = user?.role === 'doctor';
+    const isPatient = user?.role === 'patient';
+    const isDark = isAdmin || isDoctor || isPatient;
 
     return (
         <div style={{
             minHeight: '100vh',
             display: 'flex',
-            background: isAdmin ? '#0c0f1a' : '#f8fafc',
+            background: isDark ? '#0c0f1a' : '#f8fafc',
             position: 'relative',
             overflow: 'hidden',
             fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif"
         }}>
             {/* Ambient glows */}
-            {isAdmin ? (
+            {isDark ? (
                 <>
-                    <div style={{ position: 'fixed', top: '-15%', left: '20%', width: '40%', height: '40%', background: 'radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(80px)', pointerEvents: 'none' }} />
-                    <div style={{ position: 'fixed', bottom: '-10%', right: '10%', width: '35%', height: '35%', background: 'radial-gradient(circle, rgba(16,185,129,0.04) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(80px)', pointerEvents: 'none' }} />
+                    <div style={{ position: 'fixed', top: '-15%', left: '20%', width: '40%', height: '40%', background: isDoctor ? 'radial-gradient(circle, rgba(59,130,246,0.06) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(80px)', pointerEvents: 'none' }} />
+                    <div style={{ position: 'fixed', bottom: '-10%', right: '10%', width: '35%', height: '35%', background: isDoctor ? 'radial-gradient(circle, rgba(59,130,246,0.04) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(16,185,129,0.04) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(80px)', pointerEvents: 'none' }} />
                 </>
             ) : (
                 <>
@@ -34,7 +37,7 @@ const DashboardLayout = ({ children }) => {
                 padding: '32px',
                 position: 'relative',
                 zIndex: 10
-            }}>
+            }} className={isPatient ? 'patient-dark' : ''}>
                 <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
                     {children}
                 </div>

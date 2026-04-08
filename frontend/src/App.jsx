@@ -7,6 +7,11 @@ import Signup from './pages/Signup';
 import DoctorLogin from './pages/DoctorLogin';
 import PatientDashboard from './pages/PatientDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
+import DoctorAppointments from './pages/DoctorAppointments';
+import DoctorPatients from './pages/DoctorPatients';
+import DoctorMedicalFiles from './pages/DoctorMedicalFiles';
+import DoctorProfile from './pages/DoctorProfile';
+import DoctorSettings from './pages/DoctorSettings';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminLogin from './pages/AdminLogin';
 import AdminDoctors from './pages/AdminDoctors';
@@ -162,6 +167,46 @@ const AppContent = () => {
                     element={
                         <PrivateRoute roles={['doctor']}>
                             <DoctorDashboard />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/doctor/appointments"
+                    element={
+                        <PrivateRoute roles={['doctor']}>
+                            <DoctorAppointments />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/doctor/patients"
+                    element={
+                        <PrivateRoute roles={['doctor']}>
+                            <DoctorPatients />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/doctor/medical-files"
+                    element={
+                        <PrivateRoute roles={['doctor']}>
+                            <DoctorMedicalFiles />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/doctor/profile"
+                    element={
+                        <PrivateRoute roles={['doctor']}>
+                            <DoctorProfile />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/doctor/settings"
+                    element={
+                        <PrivateRoute roles={['doctor']}>
+                            <DoctorSettings />
                         </PrivateRoute>
                     }
                 />

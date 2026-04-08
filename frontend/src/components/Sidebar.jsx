@@ -15,6 +15,9 @@ const Sidebar = ({ role }) => {
     const { logout, user } = useAuth();
     const [unreadCount, setUnreadCount] = useState(0);
     const isAdmin = role === 'admin';
+    const isDoctor = role === 'doctor';
+    const isPatient = role === 'patient';
+    const isDark = isAdmin || isDoctor || isPatient;
 
     useEffect(() => {
         if (!user || isAdmin) return;
@@ -34,20 +37,23 @@ const Sidebar = ({ role }) => {
 
     const links = {
         patient: [
-            { name: "Dashboard", path: "/patient/dashboard", icon: LayoutDashboard },
-            { name: "Book Appointment", path: "/patient/book", icon: Calendar },
-            { name: "My History", path: "/patient/history", icon: History },
-            { name: "Medical Records", path: "/patient/records", icon: Shield },
-            { name: "Notifications", path: "/patient/notifications", icon: Bell },
-            { name: "Profile", path: "/patient/profile", icon: User },
+            { name: "Dashboard",        path: "/patient/dashboard",      icon: LayoutDashboard, section: null },
+            { name: "Book Appointment",  path: "/patient/book",           icon: Calendar,        section: "My Care" },
+            { name: "My History",        path: "/patient/history",        icon: History,         section: null },
+            { name: "Medical Records",   path: "/patient/records",        icon: Shield,          section: null },
+            { name: "Notifications",     path: "/patient/notifications",  icon: Bell,            section: null },
+            { name: "Profile",           path: "/patient/profile",        icon: User,            section: "Account" },
         ],
         doctor: [
-            { name: "Dashboard", path: "/doctor/dashboard", icon: LayoutDashboard },
-            { name: "Appointments", path: "/doctor/appointments", icon: Calendar },
-            { name: "Patient History", path: "/doctor/history", icon: FileText },
-            { name: "Availability", path: "/doctor/availability", icon: Clock },
-            { name: "Profile", path: "/doctor/profile", icon: User },
+            { name: "Dashboard",     path: "/doctor/dashboard",     icon: LayoutDashboard, section: null },
+            { name: "Appointments",  path: "/doctor/appointments",  icon: Calendar,        section: "Practice" },
+            { name: "My Patients",   path: "/doctor/patients",      icon: Users,           section: null },
+            { name: "Medical Files", path: "/doctor/medical-files", icon: FileText,        section: null },
+            { name: "Profile",       path: "/doctor/profile",       icon: User,            section: "Account" },
+            { name: "Settings",      path: "/doctor/settings",      icon: Settings,        section: null },
         ],
+
+
         admin: [
             { name: "Overview", path: "/admin/dashboard", icon: LayoutDashboard, section: null },
             { name: "Doctors", path: "/admin/doctors", icon: Stethoscope, section: "Management" },
@@ -63,13 +69,12 @@ const Sidebar = ({ role }) => {
     const roleColor = { patient: "bg-emerald-500", doctor: "bg-blue-500", admin: "bg-emerald-500" }[role] || "bg-slate-500";
     const roleBadge = { patient: "Patient", doctor: "Doctor", admin: "Administrator" }[role] || "User";
 
-    // Dark sidebar for admin, light for others
-    const sidebarBg = isAdmin ? '#0e1120' : '#0f1117';
-    const borderColor = isAdmin ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.06)';
-    const activeAccent = isAdmin ? '#10b981' : '#10b981';
-    const activeBg = isAdmin ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.1)';
-    const activeText = isAdmin ? '#6ee7b7' : '#34d399';
-    const logoAccent = isAdmin ? '#10b981' : '#10b981';
+    const sidebarBg = '#0e1120';
+    const borderColor = 'rgba(255,255,255,0.05)';
+    const activeAccent = isDoctor ? '#3b82f6' : '#10b981';
+    const activeBg = isDoctor ? 'rgba(59,130,246,0.1)' : 'rgba(16,185,129,0.1)';
+    const activeText = isDoctor ? '#93c5fd' : '#6ee7b7';
+    const logoAccent = isDoctor ? '#3b82f6' : '#10b981';
 
     // Group admin links by section
     const renderAdminLinks = () => {
@@ -168,18 +173,18 @@ const Sidebar = ({ role }) => {
                     <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{
                             height: 36, width: 36, borderRadius: 11, flexShrink: 0,
-                            background: `linear-gradient(135deg, ${logoAccent}, ${isAdmin ? '#4f46e5' : '#059669'})`,
+                            background: `linear-gradient(135deg, ${logoAccent}, ${isAdmin ? '#4f46e5' : isDoctor ? '#1d4ed8' : '#059669'})`,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             boxShadow: `0 6px 16px ${logoAccent}40`
                         }}>
-                            {isAdmin ? <Building2 size={17} color="white" /> : <HeartPulse size={17} color="white" />}
+                            {isAdmin ? <Building2 size={17} color="white" /> : isDoctor ? <Stethoscope size={17} color="white" /> : <HeartPulse size={17} color="white" />}
                         </div>
                         <div>
                             <p style={{ color: 'white', fontSize: 14, fontWeight: 800, margin: 0, letterSpacing: '-0.3px' }}>
-                                {isAdmin ? 'Admin Portal' : 'CarePulse'}
+                                {isAdmin ? 'Admin Portal' : isDoctor ? 'Doctor Portal' : 'Patient Portal'}
                             </p>
                             <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 9, fontWeight: 700, margin: 0, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                                {isAdmin ? 'Hospital Management' : 'Healthcare'}
+                                {isAdmin ? 'Hospital Management' : isDoctor ? 'Medical Staff' : 'Healthcare'}
                             </p>
                         </div>
                     </Link>
@@ -193,28 +198,17 @@ const Sidebar = ({ role }) => {
                 </div>
             </div>
 
-            {/* Admin Status Badge */}
-            {isAdmin && (
-                <div style={{ padding: '10px 16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 9 }}>
-                        <div style={{ height: 6, width: 6, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 5px #10b981', flexShrink: 0 }} />
-                        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>System Active</span>
-                    </div>
+            {/* Status Badge */}
+            <div style={{ padding: '10px 16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: isDoctor ? 'rgba(59,130,246,0.1)' : 'rgba(16,185,129,0.08)', border: `1px solid ${isDoctor ? 'rgba(59,130,246,0.2)' : 'rgba(16,185,129,0.18)'}`, borderRadius: 9 }}>
+                    <div style={{ height: 6, width: 6, borderRadius: '50%', background: activeAccent, boxShadow: `0 0 5px ${activeAccent}`, flexShrink: 0 }} />
+                    <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{isDoctor ? 'On Duty' : isAdmin ? 'System Active' : 'Active Session'}</span>
                 </div>
-            )}
+            </div>
 
             {/* Navigation */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '8px 10px' }}>
-                {!isAdmin && (
-                    <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.18em', padding: '4px 6px 10px', margin: 0 }}>
-                        Main Menu
-                    </p>
-                )}
-                {isAdmin ? renderAdminLinks() : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        {renderStandardLinks()}
-                    </div>
-                )}
+                {renderAdminLinks()}
             </div>
 
             {/* Footer – User Card */}

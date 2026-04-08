@@ -58,3 +58,178 @@ body {
 .animate-shake {
     animation: shake 0.4s ease-in-out;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PATIENT PORTAL – DARK THEME SCOPE
+   Wraps all patient page content to force dark-mode rendering
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.patient-dark {
+    /* Page/layout background is already set by DashboardLayout (#0c0f1a) */
+    color: rgba(255,255,255,0.8);
+}
+
+/* Cards that were bg-white */
+.patient-dark .bg-white,
+.patient-dark [class*="bg-white"] {
+    background-color: rgba(255,255,255,0.04) !important;
+    border-color: rgba(255,255,255,0.07) !important;
+}
+
+/* Slate backgrounds */
+.patient-dark .bg-slate-50,
+.patient-dark [class*="bg-slate-50"] {
+    background-color: rgba(255,255,255,0.05) !important;
+}
+.patient-dark .bg-slate-100,
+.patient-dark [class*="bg-slate-100"] {
+    background-color: rgba(255,255,255,0.07) !important;
+}
+.patient-dark .bg-slate-900 {
+    background-color: rgba(0,0,0,0.4) !important;
+}
+
+/* Borders */
+.patient-dark .border-slate-50,
+.patient-dark .border-slate-100,
+.patient-dark .border-slate-200 {
+    border-color: rgba(255,255,255,0.07) !important;
+}
+.patient-dark .divide-slate-50 > * + * {
+    border-color: rgba(255,255,255,0.06) !important;
+}
+
+/* Text colors */
+.patient-dark .text-slate-800,
+.patient-dark .text-slate-900 {
+    color: rgba(255,255,255,0.92) !important;
+}
+.patient-dark .text-slate-700 {
+    color: rgba(255,255,255,0.75) !important;
+}
+.patient-dark .text-slate-600 {
+    color: rgba(255,255,255,0.55) !important;
+}
+.patient-dark .text-slate-500 {
+    color: rgba(255,255,255,0.4) !important;
+}
+.patient-dark .text-slate-400 {
+    color: rgba(255,255,255,0.28) !important;
+}
+.patient-dark .text-slate-300 {
+    color: rgba(255,255,255,0.2) !important;
+}
+
+/* Inputs & selects in dark mode */
+.patient-dark input,
+.patient-dark select,
+.patient-dark textarea {
+    background-color: rgba(255,255,255,0.05) !important;
+    border-color: rgba(255,255,255,0.1) !important;
+    color: rgba(255,255,255,0.85) !important;
+}
+.patient-dark input::placeholder,
+.patient-dark textarea::placeholder {
+    color: rgba(255,255,255,0.2) !important;
+}
+.patient-dark input:focus,
+.patient-dark select:focus,
+.patient-dark textarea:focus {
+    border-color: rgba(16,185,129,0.5) !important;
+    box-shadow: 0 0 0 3px rgba(16,185,129,0.12) !important;
+    outline: none !important;
+}
+.patient-dark select option {
+    background-color: #1a1f33 !important;
+    color: rgba(255,255,255,0.85) !important;
+}
+
+/* Colored light bg badges */
+.patient-dark .bg-emerald-50 { background-color: rgba(16,185,129,0.12) !important; }
+.patient-dark .bg-blue-50    { background-color: rgba(59,130,246,0.12) !important; }
+.patient-dark .bg-violet-50  { background-color: rgba(139,92,246,0.12) !important; }
+.patient-dark .bg-amber-50   { background-color: rgba(245,158,11,0.12) !important; }
+.patient-dark .bg-rose-50    { background-color: rgba(239,68,68,0.12)  !important; }
+.patient-dark .bg-red-50     { background-color: rgba(239,68,68,0.12)  !important; }
+.patient-dark .bg-cyan-50    { background-color: rgba(6,182,212,0.12)  !important; }
+.patient-dark .bg-indigo-50  { background-color: rgba(99,102,241,0.12) !important; }
+
+/* Colored light borders */
+.patient-dark .border-emerald-100 { border-color: rgba(16,185,129,0.2) !important; }
+.patient-dark .border-blue-100    { border-color: rgba(59,130,246,0.2) !important; }
+.patient-dark .border-violet-100  { border-color: rgba(139,92,246,0.2) !important; }
+.patient-dark .border-amber-100   { border-color: rgba(245,158,11,0.2) !important; }
+.patient-dark .border-rose-100    { border-color: rgba(239,68,68,0.2)  !important; }
+
+/* Gradient backgrounds */
+.patient-dark [class*="bg-gradient-to-r from-white"] {
+    background: transparent !important;
+}
+.patient-dark .bg-gradient-to-r.from-emerald-50 {
+    background: rgba(16,185,129,0.06) !important;
+}
+
+/* Hover backgrounds */
+.patient-dark .hover\:bg-slate-50:hover,
+.patient-dark .hover\:bg-slate-100:hover,
+.patient-dark .hover\:bg-white:hover {
+    background-color: rgba(255,255,255,0.06) !important;
+}
+
+/* Step progress bar (BookAppointment) */
+.patient-dark .bg-slate-50.rounded-xl.border {
+    background-color: rgba(255,255,255,0.04) !important;
+}
+
+/* Shadows — make subtle in dark mode */
+.patient-dark .shadow-sm,
+.patient-dark .shadow-md { box-shadow: 0 2px 12px rgba(0,0,0,0.4) !important; }
+
+/* Modal overlays — keep dark bg */
+.patient-dark .bg-white.rounded-2xl.max-w-2xl,
+.patient-dark .bg-white.rounded-2xl.max-w-md,
+.patient-dark .bg-white.rounded-2xl.max-w-lg {
+    background-color: #141829 !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+}
+
+/* Sticky modal header */
+.patient-dark .sticky.top-0.bg-gradient-to-r {
+    background: linear-gradient(to right, #10b981, #059669) !important;
+}
+
+/* Pagination buttons */
+.patient-dark .border.border-slate-200.rounded-lg {
+    border-color: rgba(255,255,255,0.1) !important;
+    color: rgba(255,255,255,0.5) !important;
+    background: transparent !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SPECIFIC COMPONENT POLISH (NOTIFICATIONS & CARDS)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Clear item backgrounds (Fix for muddy gray rows) */
+.patient-dark .bg-emerald-50\/20, 
+.patient-dark .bg-emerald-50 { background-color: rgba(16, 185, 129, 0.08) !important; }
+.patient-dark .bg-blue-50\/20, 
+.patient-dark .bg-blue-50 { background-color: rgba(59, 130, 246, 0.08) !important; }
+.patient-dark .bg-slate-50\/60,
+.patient-dark .bg-slate-50\/20 { background-color: rgba(255, 255, 255, 0.03) !important; }
+
+/* Icon circle clarity (Make icons pop) */
+.patient-dark .p-2.rounded-lg[class*="bg-emerald"],
+.patient-dark .p-3.rounded-xl[class*="bg-emerald"] { background-color: rgba(16, 185, 129, 0.15) !important; border: 1px solid rgba(16, 185, 129, 0.2) !important; }
+.patient-dark .p-2.rounded-lg[class*="bg-blue"],
+.patient-dark .p-3.rounded-xl[class*="bg-blue"] { background-color: rgba(59, 130, 246, 0.15) !important; border: 1px solid rgba(59, 130, 246, 0.2) !important; }
+.patient-dark .p-2.rounded-lg[class*="bg-amber"],
+.patient-dark .p-3.rounded-xl[class*="bg-amber"] { background-color: rgba(245, 158, 11, 0.15) !important; border: 1px solid rgba(245, 158, 11, 0.2) !important; }
+
+/* Badge transparency */
+.patient-dark .bg-emerald-100\/50,
+.patient-dark .bg-blue-100\/50,
+.patient-dark .bg-amber-100\/50 { background-color: rgba(255, 255, 255, 0.1) !important; color: white !important; }
+
+/* Action buttons (Icons in list) */
+.patient-dark .hover\:bg-emerald-50:hover { background-color: rgba(16, 185, 129, 0.2) !important; }
+.patient-dark .hover\:bg-red-50:hover { background-color: rgba(239, 68, 68, 0.2) !important; }
